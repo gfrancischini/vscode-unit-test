@@ -11,16 +11,91 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.sayHello"
+        "onView:unit.test.explorer.vsTestTree"
     ],
     "main": "./out/extension",
     "contributes": {
         "commands": [
             {
-                "command": "extension.sayHello",
-                "title": "Hello World"
+                "command": "unit.test.execution.runSelected",
+                "title": "Run Selected Test",
+                "icon": "resources/light/play_button.svg"
+            },
+            {
+                "command": "unit.test.execution.runAll",
+                "title": "Run All Tests",
+                "icon": "resources/light/play_all_button.svg"
+            },
+            {
+                "command": "unit.test.execution.debugSelected",
+                "title": "Debug Selected Test"
+            },
+            {
+                "command": "unit.test.execution.debugAll",
+                "title": "Debug All Tests"
+            },
+            {
+                "command": "unit.test.execution.stop",
+                "title": "Stop Tests"
+            },
+            {
+                "command": "unit.test.explorer.open",
+                "title": "Open the selected Test"
+            },
+            {
+                "command": "unit.test.explorer.showResult",
+                "title": "Show selected test Result"
+            },
+            {
+                "command": "unit.test.explorer.restart",
+                "title": "Restart Test Explorer"
+            },
+            {
+                "command": "unit.test.explorer.refresh",
+                "title": "Refresh Test Explorer"
+            },
+            {
+                "command": "unit.test.explorer.groupBy",
+                "title": "Group Test By",
+                "icon": "resources/light/group.svg"
+            },
+            {
+                "command": "unit.test.explorer.initialize",
+                "title": "Initialize Test Explorer"
             }
-        ]
+        ],
+        "views": {
+            "explorer": [
+                {
+                    "id": "unit.test.explorer.vsTestTree",
+                    "name": "Test Explorer"
+                }
+            ]
+        },
+        "menus": {
+            "view/title": [
+                {
+                    "command": "unit.test.execution.runSelected",
+                    "when": "view == unit.test.explorer.vsTestTree",
+                    "group": "navigation"
+                },
+                {
+                    "command": "unit.test.explorer.groupBy",
+                    "when": "view == unit.test.explorer.vsTestTree",
+                    "group": "navigation"
+                },
+                {
+                    "command": "unit.test.execution.runAll",
+                    "when": "view == unit.test.explorer.vsTestTree",
+                    "group": "hidden"
+                },
+                {
+                    "command": "unit.test.execution.debugSelected",
+                    "when": "view == unit.test.explorer.vsTestTree",
+                    "group": "hidden"
+                }
+            ]
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
@@ -34,5 +109,8 @@
         "vscode": "^1.1.6",
         "@types/node": "^7.0.43",
         "@types/mocha": "^2.2.42"
+    },
+    "dependencies": {
+        "fs.extra": "^1.3.2"
     }
 }
