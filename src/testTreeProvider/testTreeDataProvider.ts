@@ -5,7 +5,7 @@ import { TreeLabel } from "../testTreeModel/treeLabel"
 import { GroupByProvider } from "./groupByProvider"
 import { isExtensionEnabled, isAutoInitializeEnabled } from "../utils/vsconfig"
 import { getImageResource } from "../utils/image"
-import { MochaTestService } from "../mocha-unit-test/mochaTestService"
+import { MochaTestService } from "../mochaUnitTest/mochaTestService"
 
 export function RegisterVSTestTreeProvider(context: vscode.ExtensionContext) {
     let testTreeDataProvider: TestTreeDataProvider;
