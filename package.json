@@ -40,11 +40,11 @@
             },
             {
                 "command": "unit.test.explorer.open",
-                "title": "Open the selected Test"
+                "title": "Open Test"
             },
             {
-                "command": "unit.test.explorer.showResult",
-                "title": "Show selected test Result"
+                "command": "unit.test.explorer.openTestResult",
+                "title": "Open Selected Test Result"
             },
             {
                 "command": "unit.test.explorer.restart",
@@ -105,7 +105,7 @@
                     "command": "unit.test.execution.runSelected"
                 },
                 {
-                    "command": "unit.test.explorer.showResult"
+                    "command": "unit.test.explorer.open"
                 }
             ]
         }

@@ -10,7 +10,6 @@ export function replaceAll(target, search, replacement) {
  * @return {String}
  * @api public
  */
-
-export function escapeRegex(string){
+export function escapeRegex(string) {
     return ('' + string).replace(/([?!${}*:()|=^[\]\/\\.+])/g, '\\$1');
 }

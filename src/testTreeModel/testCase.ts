@@ -50,12 +50,12 @@ export class TestCase {
     /**
      * Line where this test is found
      */
-    public line: number;
+    public line: number = 0;
 
     /**
      * Column where this test is found
      */
-    public column: number;
+    public column: number = 0;
 
     /**
      * Full title of this test

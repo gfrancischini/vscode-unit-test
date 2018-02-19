@@ -54,13 +54,14 @@ export class MochaTestService {
     */
     public discoveryWorkspaceTests(directory: string): Promise<Array<TestCase>> {
         return <Promise<Array<TestCase>>>vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: "Test Adapter" }, progress => {
-            progress.report({ message: "Discovering Tests" });
+            
             return new Promise((resolve, reject) => {
                 const testFilesPath = getAllTestFilesInDirectory(directory, this.globPattern);
 
                 this.testCases = new Array<TestCase>();
 
-                testFilesPath.forEach(testFilePath => {
+                testFilesPath.forEach((testFilePath, i) => {
+                    progress.report({ message: `Discovering Tests: ${i}/${testFilesPath.length}` });
                     const results = MochaTestFinder.findTestCases(testFilePath);
                     this.testCaseCollection = results;
                 });

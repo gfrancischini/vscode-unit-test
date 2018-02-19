@@ -8,6 +8,10 @@ import { MochaTestService } from "../mochaUnitTest/mochaTestService"
 import * as Collections from "typescript-collections";
 import { TestTreeType } from "../testTreeModel/treeType"
 
+/**
+ * Register the test tree explorer
+ * @param context 
+ */
 export function RegisterVSTestTreeProvider(context: vscode.ExtensionContext) {
     let testTreeDataProvider: TestTreeDataProvider;
     testTreeDataProvider = new TestTreeDataProvider(context);
@@ -15,13 +19,18 @@ export function RegisterVSTestTreeProvider(context: vscode.ExtensionContext) {
 }
 
 
-
-
 /**
  * Additional data to help the tree data provider
  */
 class TestAdditionalData {
     collapsibleState: vscode.TreeItemCollapsibleState;
+}
+
+enum TestTreeDataProviderStatus {
+    None,
+    Initializing,
+    FindingTests,
+    Ready
 }
 
 export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeType> {
@@ -38,19 +47,33 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      */
     private groupByFilter: GroupByProvider = new GroupByProvider();
 
+    /**
+     * Additional test data related to handling the tree view
+     */
     private testsAdditionalData: Collections.Dictionary<string, TestAdditionalData> = new Collections.Dictionary<string, TestAdditionalData>();
+
+    /**
+     * Current test tree status
+     */
+    private status: TestTreeDataProviderStatus = TestTreeDataProviderStatus.None;
 
     private rootDir = null;
     //private rootDir = "C:\\Git\\p1-my-reads\\src\\test";
+
+    private testResultOutputChannel = vscode.window.createOutputChannel('Test Result');
+
 
     /**
      * Get children method that must be implemented by test tree provider
      * @param item The test case to draw on the test tree
      */
     public getChildren(item?: TestTreeType): Thenable<TestTreeType[]> {
-        /*if (this.isTestExplorerInitialized === false) {
-            return this.getTestExplorerNotInitialized();
-        }*/
+        switch (this.status) {
+            case TestTreeDataProviderStatus.None:
+                return this.createNotInitializedLabel();
+            case TestTreeDataProviderStatus.Initializing:
+                return this.createInitializingLabel();
+        }
 
         // if the testcase exists then resolve it children
         if (item) {
@@ -64,10 +87,6 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         }
         else {
             // if testcase = null means that we are in the root
-            //const filtered = this.testService.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
-            //    return testCase.parendId == null;
-            //})
-
             return this.groupByFilter.getSelected().getCategories(this.testService.testCaseCollection.testCasesDictionary.values());
         }
     }
@@ -81,7 +100,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             label: item.title,
             collapsibleState: this.getItemCollapsibleState(item),
             command: {
-                command: "vstest.explorer.open",
+                command: "unit.test.explorer.openTestResult",
                 arguments: [item],
                 title: item.title,
             },
@@ -100,10 +119,6 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         }
 
         if (item instanceof TestCase) {
-            //if (item.isRunning()) {
-            //    return getImageResource("progress.svg");
-            //}
-
             let appendStringIcon = "";
             if (item.sessionId != this.testService.sessionId) {
                 appendStringIcon = "_previousExec";
@@ -132,9 +147,10 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * Called when discovery test is needed
      */
     private discoveryTests() {
+        this.status = TestTreeDataProviderStatus.FindingTests;
         this.testService.discoveryWorkspaceTests(this.rootDir).then((testCases) => {
+            this.status = TestTreeDataProviderStatus.Ready;
             this._onDidChangeTreeData.fire();
-            //this.testService.runTests(this.testService.testCaseCollection.testCasesDictionary.values());
         });
     }
 
@@ -165,8 +181,24 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * Create a no test found label
      */
     private createNoTestFoundLabel() {
-        const noTestFoundLabel: TreeLabel = new TreeLabel("No Test Found", TestCaseStatus.None, null);
-        return Promise.resolve([noTestFoundLabel]);
+        const label: TreeLabel = new TreeLabel("No Test Found", TestCaseStatus.None, null);
+        return Promise.resolve([label]);
+    }
+
+    /**
+     * Create a not initialized label
+     */
+    private createNotInitializedLabel() {
+        const label: TreeLabel = new TreeLabel("Not Initialized", TestCaseStatus.None, null);
+        return Promise.resolve([label]);
+    }
+
+    /**
+     * Create a not initialized label
+     */
+    private createInitializingLabel() {
+        const label: TreeLabel = new TreeLabel("Initializing", TestCaseStatus.None, null);
+        return Promise.resolve([label]);
     }
 
 
@@ -273,8 +305,8 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         context.subscriptions.push(runCommand);
 
         //register the show test case result command
-        const showTestResultCommand = vscode.commands.registerCommand("unit.test.explorer.showResult",
-            event => this.onCommandShowTestCaseResult(event));
+        const showTestResultCommand = vscode.commands.registerCommand("unit.test.explorer.openTestResult",
+            event => this.onCommandOpenTestCaseResult(event));
         context.subscriptions.push(showTestResultCommand);
 
 
@@ -305,19 +337,23 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
                 const initializeTestExplorer = vscode.commands.registerCommand("vstest.explorer.initialize", event => this.initialize());
                 context.subscriptions.push(showTestResult);*/
     }
-    private testOutputChannel = vscode.window.createOutputChannel('Test');
-    private onCommandShowTestCaseResult(item: TestTreeType) {
+
+    private onCommandOpenTestCaseResult(item: TestTreeType) {
         if (item instanceof TestCase) {
-            this.testOutputChannel.clear();
+            this.testResultOutputChannel.clear();
+            this.testResultOutputChannel.show(true);
+            this.testResultOutputChannel.appendLine(item.title);
+            this.testResultOutputChannel.appendLine(`Source: ${item.path}:${item.line}:${item.column}`);
 
-            this.testOutputChannel.appendLine(item.title);
-            this.testOutputChannel.appendLine(`Duration: ${item.getDurationInMilliseconds()}`);
-            this.testOutputChannel.appendLine(`Start Time: ${item.startTime}`);
-            this.testOutputChannel.appendLine(`End Time: ${item.endTime}`);
+            if (item.status != TestCaseStatus.None) {
+                this.testResultOutputChannel.appendLine(`Duration: ${item.getDurationInMilliseconds()}`);
+                this.testResultOutputChannel.appendLine(`Start Time: ${item.startTime}`);
+                this.testResultOutputChannel.appendLine(`End Time: ${item.endTime}`);
 
-            if (item.status === TestCaseStatus.Failed) {
-                this.testOutputChannel.appendLine(`Error: ${item.errorMessage}`);
-                this.testOutputChannel.appendLine(`Stack Trace: ${item.errorStackTrace}`);
+                if (item.status === TestCaseStatus.Failed) {
+                    this.testResultOutputChannel.appendLine(`Error: ${item.errorMessage}`);
+                    this.testResultOutputChannel.appendLine(`Stack Trace: ${item.errorStackTrace}`);
+                }
             }
         }
     }
