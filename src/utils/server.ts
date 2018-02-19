@@ -17,15 +17,15 @@ export function startServer(cwd: string) {
     const childProcess = cp.spawn("node", spawnArgs, { cwd: cwd, stdio: ["pipe", "pipe", "pipe", "ipc"] });
 
     childProcess.on("message", data => {
-        console.log(new Date().toISOString() + " - MESSAGE: " + data);
+        //console.log(new Date().toISOString() + " - MESSAGE: " + data);
     });
 
     childProcess.stdout.on("data", data => {
-        console.log("STD_OUT: " + data);
+        //console.log("STD_OUT: " + data);
     });
 
     childProcess.stderr.on("data", data => {
-        console.log("STD_ERROR: " + data);
+        //console.log("STD_ERROR: " + data);
     });
 
     childProcess.on("exit", code => {

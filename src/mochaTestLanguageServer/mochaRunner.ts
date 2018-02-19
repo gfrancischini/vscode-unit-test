@@ -109,7 +109,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
                 } catch (err) {
 
                     testCases.forEach((testCase) => {
-                        if (testCase.sessionId != sessionId) {
+                        if (testCase.path === currentFilePath && testCase.sessionId != sessionId) {
                             testCase.isRunning = false;
                             testCase.status = TestCaseStatus.Failed;
                             testCase.sessionId = sessionId;
@@ -245,7 +245,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
                 testCase.isRunning = false;
                 testCase.status = TestCaseStatus.Passed;
                 testCase.endTime = new Date();
-                testCase.duration =  new Date(this.endTime).getTime() - new Date(this.startTime).getTime();
+                testCase.duration =  new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
 
                 connection.testCaseUpdate({
                     testCase
@@ -272,7 +272,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
                     testCase.errorStackTrace = err.stack;
                     testCase.status = TestCaseStatus.Failed;
                     testCase.endTime = new Date();
-                    testCase.duration =  new Date(this.endTime).getTime() - new Date(this.startTime).getTime();
+                    testCase.duration =  new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
 
                     connection.testCaseUpdate({
                         testCase
@@ -290,7 +290,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
                 if (testCase) {
                     testCase.isRunning = false;
                     testCase.endTime = new Date();
-                    testCase.duration =  new Date(this.endTime).getTime() - new Date(this.startTime).getTime();
+                    testCase.duration =  new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
 
                     if (qtyOfFailures > 0) {
 
