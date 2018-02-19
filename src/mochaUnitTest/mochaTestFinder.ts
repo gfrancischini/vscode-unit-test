@@ -1,27 +1,41 @@
 import * as ts from "typescript";
 import * as fs from "fs-extra";
-
+import * as path from "path";
 import { MochaTestCase, SuiteItem, DescribeItem, ItItem } from "./MochaTestCase";
 import { TestCase } from "../testTreeModel/testCase";
-
+import {TestCaseCollection} from "./testCaseCollection"
 export class MochaTestFinder {
-
+    static testCaseCollection = new TestCaseCollection();
     /**
      * Find test cases in the given file
      * @param filePath File path to search for test cases
      * @return Array of found test cases
      */
-    public static findTestCases(filePath: string): TestCase[] {
+    public static findTestCases(filePath: string): TestCaseCollection {
         const textTestFile: string = fs.readFileSync(filePath).toString();
         const sourceFile: ts.SourceFile = ts.createSourceFile(
             filePath, textTestFile, ts.ScriptTarget.Latest, false, ts.ScriptKind.Unknown);
-        return sourceFile.statements.map(statement => MochaTestFinder.visit(sourceFile, statement, null)).filter(o => o);
+
+        const testCase = new TestCase();
+        testCase.setLine(0);
+        
+        testCase.setPath(sourceFile.fileName);
+        testCase.setTitle(path.basename(sourceFile.fileName));
+        testCase.setParent(null);
+        testCase.fullTitle = "";
+        testCase.isTestCase = false;
+        MochaTestFinder.testCaseCollection.push(testCase);
+
+
+        //return sourceFile.statements.map(statement => MochaTestFinder.visit(sourceFile, statement, null)).filter(o => o);
+         sourceFile.statements.map(statement => MochaTestFinder.visit(sourceFile, statement, testCase));
+         return MochaTestFinder.testCaseCollection;
     }
 
     /**
      * Visit source file nodes to find mocha tests
      */
-    private static visit(sourceFile: ts.SourceFile, node: ts.Node, parent: MochaTestCase): any {
+    private static visit(sourceFile: ts.SourceFile, node: ts.Node, parent: TestCase): any {
         switch (node.kind) {
             case ts.SyntaxKind.ExpressionStatement: {
                 const obj: ts.ExpressionStatement = node as ts.ExpressionStatement;
@@ -33,49 +47,74 @@ export class MochaTestFinder {
                 const name: string = MochaTestFinder.visit(sourceFile, obj.expression, null);
                 switch (name) {
                     case "suite": {
-                        let result: SuiteItem = new SuiteItem();
+                        const pos: number = sourceFile.text.lastIndexOf("suite", obj.arguments[0].pos);
 
+                        
+                        let result: SuiteItem = new SuiteItem();
+                        
+                        result.setLine(sourceFile.getLineAndCharacterOfPosition(pos).line);
+                        result.setTitle(MochaTestFinder.visit(sourceFile, obj.arguments[0], null));
+                        //result.setChildren(children);
+                        result.parendId = parent != null && parent.getId();
+                        result.setPath(sourceFile.fileName);
+                        result.setParent(parent);
+                        result.calculateFullTitle();
                         let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result);
                         if (!Array.isArray(children)) {
                             children = [children];
                         }
+                        result.isTestCase = false;
+                        
 
-                        const pos: number = sourceFile.text.lastIndexOf("suite", obj.arguments[0].pos);
+                        MochaTestFinder.testCaseCollection.push(result);
 
-                        result.setLine(sourceFile.getLineAndCharacterOfPosition(pos).line);
-                        result.setTitle(MochaTestFinder.visit(sourceFile, obj.arguments[0], null));
-                        result.setChildren(children);
-                        result.setPath(sourceFile.fileName);
-                        result.setParent(parent);
                         return result;
                     }
 
                     case "describe.skip": 
                     case "describe": {
+                        const pos: number = sourceFile.text.lastIndexOf("describe", obj.arguments[0].pos);
+
+
                         let result: DescribeItem = new DescribeItem();
+                        result.setLine(sourceFile.getLineAndCharacterOfPosition(pos).line);
+                        result.setTitle(MochaTestFinder.visit(sourceFile, obj.arguments[0], null));
+                        //result.setChildren(children);
+                        result.parendId = parent != null && parent.getId();
+                        result.setPath(sourceFile.fileName);
+                        result.setParent(parent);
+                        result.calculateFullTitle();
+                        result.isTestCase = false;
                         let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result);
                         if (!Array.isArray(children)) {
                             children = [children];
                         }
 
-                        const pos: number = sourceFile.text.lastIndexOf("describe", obj.arguments[0].pos);
+                       
+                       
 
-                        result.setLine(sourceFile.getLineAndCharacterOfPosition(pos).line);
-                        result.setTitle(MochaTestFinder.visit(sourceFile, obj.arguments[0], null));
-                        result.setChildren(children);
-                        result.setPath(sourceFile.fileName);
-                        result.setParent(parent);
+                        MochaTestFinder.testCaseCollection.push(result);
+
                         return result;
                     }
 
                     case "it.skip":
                     case "it": {
-                        let result: ItItem = new ItItem();
                         const pos: number = sourceFile.text.lastIndexOf("it", obj.arguments[0].pos);
+
+                        let result: ItItem = new ItItem();
                         result.setLine(sourceFile.getLineAndCharacterOfPosition(pos).line);
                         result.setTitle(MochaTestFinder.visit(sourceFile, obj.arguments[0], null));
                         result.setPath(sourceFile.fileName);
+                        result.parendId = parent != null && parent.getId();
                         result.setParent(parent);
+                        result.calculateFullTitle();
+
+
+                       
+                        
+                        MochaTestFinder.testCaseCollection.push(result);
+
                         return result;
                     }
                 }

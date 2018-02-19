@@ -31,6 +31,26 @@
                 "${workspaceFolder}/out/test/**/*.js"
             ],
             "preLaunchTask": "npm: watch"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Connect mochaServer",
+           "address": "localhost",
+           "port": 9220,
+            "protocol": "inspector"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch IndexJs",
+            "program": "${workspaceRoot}/out/mochaUniTtest/mochaProcess/mochaServer.js",
+            "outFiles": [
+                "${workspaceRoot}/out/**/*.js"
+            ],
+            "sourceMaps": true,
+            "args": [],
+            "protocol": "inspector"
         }
     ]
 }

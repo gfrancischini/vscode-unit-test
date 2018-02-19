@@ -19,7 +19,7 @@ export abstract class GroupBy implements vscode.QuickPickItem{
     */
     public getNotRunTests(testCases: Array<TestCase>): Array<TestCase> {
         const tests = testCases.filter((test: TestCase) => {
-            if (!test.result || test.result.outcome === TestOutcome.None) {
+            if (test.isTestCase && test.result.status === TestOutcome.None) {
                 return true;
             }
             return false;

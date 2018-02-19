@@ -7,42 +7,42 @@ export class TestCase {
     /**
      * The file path that this test belong.
      */
-    protected path: string;
+    public path: string;
 
     /**
      * The path of the compiled filed.
      */
-    protected outputPath : string;
+    public outputPath : string;
 
     /**
      * The title (name) of the test.
      */
-    protected title: string;
+    public title: string;
 
     /**
      * The parent test or file
      */
-    protected parent: TestCase;
+    public parent: TestCase;
 
     /**
      * The children tests
      */
-    protected children: Array<TestCase>;
+    //public children: Array<TestCase>;
 
     /**
      * Line where this test is found
      */
-    protected line: number;
+    public line: number;
 
     /**
      * Column where this test is found
      */
-    protected column: number;
+    public column: number;
 
     /**
      * Full title of this test
      */
-    protected fullTitle: string;
+    public fullTitle: string;
 
 
      /**
@@ -50,10 +50,53 @@ export class TestCase {
      */
     result: TestCaseResult;
 
+    public parendId = null;
 
-    public getTestResult() {
-        return this.result;
+    public isTestCase : boolean = true;
+    
+
+
+    constructor() {
+    
+        this.result = new TestCaseResult();
     }
+
+
+    calculateFullTitle() {
+        if (this.parent) {
+            var full: string = this.parent.fullTitle;
+            if (full) {
+                this.fullTitle =  full + " " + this.title;
+            }
+            else {
+                this.fullTitle =  this.title;
+            }
+        }
+        else {
+            this.fullTitle =  this.title;
+        }
+    }
+
+
+
+
+
+
+
+    public getId() : string {
+        return `${this.title}${this.path}`;
+    }
+
+
+
+
+
+
+
+
+    /*public getTestResult() {
+        return this.result;
+    }*/
 
     /**
      * Any additional info need by extensions
@@ -61,7 +104,7 @@ export class TestCase {
     protected additionalInfo : object;
 
  
-    getPath(): string {
+    /*getPath(): string {
         return this.path;
     }
 
@@ -92,19 +135,11 @@ export class TestCase {
     }
 
   
-    getFullTitle(): string {
-        if (this.parent) {
-            var full: string = this.parent.getFullTitle();
-            if (full) {
-                return full + " " + this.title;
-            }
-        }
-        return this.title;
-    }
+    
 
     getAdditionalInfo(): any {
         return this.additionalInfo;
-    }
+    }*/
 
     setPath(path: string): void {
         this.path = PathUtils.normalizePath(path);
@@ -122,9 +157,9 @@ export class TestCase {
         this.parent = parent;
     }
 
-    setChildren(children: Array<TestCase>): void {
-        this.children = children;
-    }
+    //setChildren(children: Array<TestCase>): void {
+    //    this.children = children;
+    //}
 
     setLine(line: number): void {
         this.line = line;
@@ -143,7 +178,7 @@ export class TestCase {
      /**
      * Return the test display name
      */
-    public getDisplayName(): string {
+    /*public getDisplayName(): string {
         if (this.result) {
             return `${this.title} - ${this.result.getDurationInMilliseconds()} ms`;
         }
@@ -153,6 +188,6 @@ export class TestCase {
 
     public isRunning() : boolean {
         return false;
-    }
+    }*/
 }
 

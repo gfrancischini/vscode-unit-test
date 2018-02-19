@@ -5,17 +5,17 @@ import {TestOutcome} from "./testCaseResult"
  * A class to handle the group lables of the tests
  */
 export class TreeLabel {
-    private tests: Array<TestCase>;
+    public children: Array<TestCase>;
 
-    private displayName: string;
+    public title: string;
 
     private outcome: TestOutcome;
 
 
 
     constructor(displayName: string, outcome: TestOutcome, tests: Array<TestCase> = null) {
-        this.displayName = displayName;
-        this.tests = tests;
+        this.title = displayName;
+        this.children = tests;
         this.outcome = outcome;
     }
 
@@ -24,15 +24,15 @@ export class TreeLabel {
     }
 
     public getDisplayName() {
-        return `${this.displayName} (${this.getChildrenLenght()})`;
+        return `${this.title} (${this.getChildrenLenght()})`;
     }
 
     public setTests(tests: Array<TestCase>) {
-        this.tests = tests;
+        this.children = tests;
     }
 
     public getChildren(): Array<TestCase> {
-        return this.tests;
+        return this.children;
     }
 
     public getOutcome(): TestOutcome {
@@ -40,6 +40,6 @@ export class TreeLabel {
     }
 
     public getId(): string {
-        return this.displayName;
+        return this.title;
     }
 }

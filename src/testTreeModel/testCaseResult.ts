@@ -12,6 +12,10 @@ export enum TestOutcome {
     Skipped = 0x3,
     //Not found. Test case was not found during execution.
     NotFound = 0x4,
+    //
+    Running = 0x5,
+    //
+    FatalFailure = 0x6,
 }
 
 /**
@@ -41,7 +45,7 @@ export class TestCaseResult {
     /**
      * TestResult.Outcome provides an integer specifying the result of a test case execution.
      */
-    outcome: TestOutcome;
+    status: TestOutcome;
 
     /**
      * TestResult.StartTime provides the start time of the test case execution.
@@ -65,5 +69,9 @@ export class TestCaseResult {
      */
     public getDurationInMilliseconds(): number {
         return this.endTime.getTime() - this.startTime.getTime();
+    }
+
+    constructor() {
+        this.status = TestOutcome.None;
     }
 }
