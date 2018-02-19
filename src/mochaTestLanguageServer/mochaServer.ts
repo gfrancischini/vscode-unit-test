@@ -9,7 +9,7 @@ import * as path from "path";
 import { escapeRegex } from "../utils/string"
 import { TestLanguageServer } from "../testLanguage/server/testLanguageServer"
 import { RunMochaProcess } from './mochaRunner'
-import {MochaTestFinder} from "./mochaTestFinder"
+import { MochaTestFinder } from "./mochaTestFinder"
 class MochaTestLanguageServer extends TestLanguageServer {
     public registerListeners() {
         super.registerListeners();
@@ -17,12 +17,12 @@ class MochaTestLanguageServer extends TestLanguageServer {
         this.connection.onRunTestCases(async (params: RunTestCasesParams) => {
             await RunMochaProcess(params.sessionId, params.testCases, this.getConnection()).then(() => {
                 return {
-                    "test" : "ok"
+                    "test": "ok"
                 }
             });
         });
 
-        this.connection.onDiscoveryTestCases((params : DiscoveryTestCasesParams) : DiscoveryTestCasesResult => {
+        this.connection.onDiscoveryTestCases((params: DiscoveryTestCasesParams): DiscoveryTestCasesResult => {
             const testCases = new Array<TestCase>();
             params.filePaths.forEach((path) => {
                 testCases.push(...MochaTestFinder.findTestCases(path));
@@ -43,6 +43,6 @@ mochaLanguageServer.listen(new StreamMessageReader(process.stdin),
 /**
  * Override default console.log to redirect output from user test cases to the appropriate channel
  */
-console.log = function (str: string) {
-
+console.log = function (data: string) {
+    mochaLanguageServer.getConnection().dataOutput({ data });
 };

@@ -2,7 +2,8 @@ import { RequestHandler, createMessageConnection, StreamMessageReader, StreamMes
 import {
     InitializeRequest, InitializeParams, InitializeResult, InitializeError,
     RunTestCasesRequest,DiscoveryTestCasesRequest,
-    TestCaseUpdateNotification, TestCaseUpdateParams
+    TestCaseUpdateNotification, TestCaseUpdateParams,
+    DataOutputNotification, DataOutputParams
 } from "../../testLanguage/protocol"
 import { TestCase, TestCaseStatus } from "../../testLanguage/protocol";
 import * as path from "path";
@@ -13,6 +14,7 @@ export interface IConnection {
     onRunTestCases(handler: any): void;
     onDiscoveryTestCases(handler: any): void;
     testCaseUpdate(params: TestCaseUpdateParams): void;
+    dataOutput(params: DataOutputParams): void;
 }
 
 
@@ -31,7 +33,8 @@ export class TestLanguageServer {
             onInitialize: (handler) => msgConnection.onRequest(InitializeRequest.type, handler),
             onRunTestCases: (handler) => msgConnection.onRequest(RunTestCasesRequest.type, handler),
             onDiscoveryTestCases: (handler) => msgConnection.onRequest(DiscoveryTestCasesRequest.type, handler),
-            testCaseUpdate: (params: TestCaseUpdateParams) => msgConnection.sendNotification(TestCaseUpdateNotification.type, params)
+            testCaseUpdate: (params: TestCaseUpdateParams) => msgConnection.sendNotification(TestCaseUpdateNotification.type, params),
+            dataOutput: (params: DataOutputParams) => msgConnection.sendNotification(DataOutputNotification.type, params)
         }
 
         return result;

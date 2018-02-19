@@ -76,7 +76,7 @@
             "view/title": [
                 {
                     "command": "unit.test.execution.runSelected",
-                    "when": "view == unit.test.explorer.vsTestTree",
+                    "when": "view == unit.test.explorer.vsTestTree1",
                     "group": "navigation"
                 },
                 {
@@ -86,7 +86,7 @@
                 },
                 {
                     "command": "unit.test.execution.runAll",
-                    "when": "view == unit.test.explorer.vsTestTree",
+                    "when": "view == unit.test.explorer.vsTestTree1",
                     "group": "hidden"
                 }
             ],

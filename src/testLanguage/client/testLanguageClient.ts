@@ -4,6 +4,7 @@ import {
     DiscoveryTestCasesRequest, DiscoveryTestCasesParams, DiscoveryTestCasesResult, DiscoveryTestCasesError,
     RunTestCasesRequest, RunTestCasesParams, RunTestCasesResult, RunTestCasesError,
     TestCaseUpdateNotification, TestCaseUpdateParams, 
+    DataOutputNotification, DataOutputParams
 } from "../../testLanguage/protocol"
 import { TestCase, TestCaseStatus } from "../../testLanguage/protocol";
 import * as path from "path";
@@ -15,6 +16,7 @@ export interface IConnection {
     discoveryTestCases(params: DiscoveryTestCasesParams): Thenable<DiscoveryTestCasesResult>;
     runTestCases(params: RunTestCasesParams): Thenable<RunTestCasesResult>;
     onTestCaseUpdated(handler: any): void;
+    onDataOutput(handler: any): void;
 }
 
 
@@ -34,6 +36,7 @@ export class TestLanguageClient {
             discoveryTestCases: (params: DiscoveryTestCasesParams) => msgConnection.sendRequest(DiscoveryTestCasesRequest.type, params),
             runTestCases: (params: RunTestCasesParams) => msgConnection.sendRequest(RunTestCasesRequest.type, params),
             onTestCaseUpdated: (handler) => msgConnection.onNotification(TestCaseUpdateNotification.type, handler),
+            onDataOutput: (handler) => msgConnection.onNotification(DataOutputNotification.type, handler),
         }
 
         return result;

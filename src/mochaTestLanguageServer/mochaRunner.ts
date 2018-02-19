@@ -167,7 +167,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
 
         runner
             .on("start", start => {
-
+                console.log(`Start running test source ${currentFilePath}`);
                 //mochaProcessServer.sendNotifyOnTestFrameworkStart(new MochaTestFrameworkDetail(total));
                 //mochaProcessServer.sendNotifyOnTestFileStart(new MochaProcessTestCaseUpdate(
                 //    suitePath, "", currentFilePath, "file start", 0));
@@ -189,6 +189,8 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
                 if (!suite.title) {
                     return;
                 }
+                
+                console.log(`${"\t".repeat(suitePath.length+1)}Start running test suite ${suite.title}`);
 
                 const testCase: TestCase = findTestCaseByName(suite.title, (<any>suite).file);
                 if (testCase) {
@@ -310,7 +312,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
 
             })
             .on("test", (test: Mocha.ITest) => {
-
+                console.log(`${"\t".repeat(suitePath.length+2)}Start running test ${test.title}`);
                 const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);
 
                 testCase.isRunning = true;

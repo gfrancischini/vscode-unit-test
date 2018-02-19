@@ -4,3 +4,5 @@ export {DiscoveryTestCasesError, DiscoveryTestCasesParams, DiscoveryTestCasesReq
 export {RunTestCasesError, RunTestCasesParams, RunTestCasesRequest, RunTestCasesResult} from "./request/runTestCasesRequest"
 
 export {TestCaseUpdateParams, TestCaseUpdateNotification} from "./notification/testCaseUpdateNotification"
+export {DataOutputParams, DataOutputNotification} from "./notification/dataOutputNotification"
+

@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { getAllTestFilesInDirectory } from '../utils/directory'
-import { TestCase, RunTestCasesResult, DiscoveryTestCasesResult } from '../testLanguage/protocol';
+import { TestCase, RunTestCasesResult, DiscoveryTestCasesResult, DataOutputParams } from '../testLanguage/protocol';
 import Event, { Emitter } from "../base/common/Event";
 import * as Collections from "typescript-collections";
 import * as path from "path";
@@ -26,6 +26,11 @@ export class TestTreeLanguageClient extends TestLanguageClient {
     public sessionId: number = 0;
 
     private directory: string = null;
+
+    /**
+     * Create the test result output channel
+     */
+    private testOutputChannel = vscode.window.createOutputChannel('Test');
 
     constructor(directory: string) {
         super();
@@ -64,6 +69,10 @@ export class TestTreeLanguageClient extends TestLanguageClient {
 
             this._onDidTestCaseChanged.fire(testCase);
         });
+
+        this.connection.onDataOutput((params: DataOutputParams): any => {
+            this.testOutputChannel.appendLine(params.data);
+        });
     }
 
     public watchForWorkspaceFilesChange() {
@@ -83,14 +92,16 @@ export class TestTreeLanguageClient extends TestLanguageClient {
     * @param directory The directory path do discvery the tests
     */
     public discoveryWorkspaceTests(directory: string): Promise<Array<TestCase>> {
+        this.testOutputChannel.appendLine("Start test discovery");
         return <Promise<Array<TestCase>>>vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: "Test Adapter" }, progress => {
 
             return new Promise((resolve, reject) => {
                 const testFilesPath = getAllTestFilesInDirectory(directory, this.globPattern);
 
                 testFilesPath.forEach((testFilePath, i) => {
-                    progress.report({ message: `Discovering Tests: ${i}/${testFilesPath.length}` });
-
+                    const message = `Discovering Tests: ${i}/${testFilesPath.length}`;
+                    progress.report({ message });
+                    this.testOutputChannel.appendLine(`${message} - ${testFilePath}`);
                     this.connection.discoveryTestCases({
                         filePaths: [testFilePath]
                     }).then((result: DiscoveryTestCasesResult) => {
@@ -102,7 +113,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
                 });
 
                 //todo: we need to findtest cases and them do the diff between new tests and excluded ones
-
+                this.testOutputChannel.appendLine("End of test discovery");
                 return resolve(null);
             });
         });
@@ -116,7 +127,8 @@ export class TestTreeLanguageClient extends TestLanguageClient {
      */
     public runTests(testCases: Array<TestCase>, debuggingEnabled: boolean = false) {
         this.sessionId++;
-
+        this.testOutputChannel.appendLine(`Run tests for sessionId: ${this.sessionId}`);
+        this.testOutputChannel.show();
         vscode.window.withProgress(
             { location: vscode.ProgressLocation.Window, title: "Test Adapter" },
             progress => {
@@ -126,6 +138,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
                         sessionId: this.sessionId,
                         testCases
                     }).then((result: RunTestCasesResult) => {
+                        this.testOutputChannel.appendLine("End of test running");
                         return resolve(null);
                     });
                 });
