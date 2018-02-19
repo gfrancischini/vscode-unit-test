@@ -1,6 +1,5 @@
 import { GroupBy } from './groupBy'
-import { TestCase } from '../../testTreeModel/testCase';
-import { TestOutcome } from '../../testTreeModel/testCaseResult';
+import { TestCase, TestCaseStatus } from '../../testTreeModel/testCase';
 import { TreeLabel } from '../../testTreeModel/treeLabel'
 
 
@@ -17,7 +16,7 @@ export class GroupByOutcome extends GroupBy {
      */
     public getFailedTests(testCases: Array<TestCase>): Array<TestCase> {
         const tests = testCases.filter((test: TestCase) => {
-            if (test.isTestCase && test.result.status === TestOutcome.Failed) {
+            if (test.isTestCase && test.status === TestCaseStatus.Failed) {
                 return true;
             }
             return false
@@ -30,7 +29,7 @@ export class GroupByOutcome extends GroupBy {
     */
     public getPassedTests(testCases: Array<TestCase>): Array<TestCase> {
         const tests = testCases.filter((test: TestCase) => {
-            if (test.isTestCase && test.result.status === TestOutcome.Passed) {
+            if (test.isTestCase && test.status === TestCaseStatus.Passed) {
                 return true;
             }
             return false
@@ -45,9 +44,9 @@ export class GroupByOutcome extends GroupBy {
 
             //const testModel: TestModel = this.testService.getModel();
 
-            const failedTestsLabel: TreeLabel = new TreeLabel("Failed Tests", TestOutcome.Failed, this.getFailedTests(testCases));
-            const passedTests: TreeLabel = new TreeLabel("Passed Tests", TestOutcome.Passed, this.getPassedTests(testCases));
-            const notRunTestsLabel: TreeLabel = new TreeLabel("Not Run Tests", TestOutcome.None, this.getNotRunTests(testCases));
+            const failedTestsLabel: TreeLabel = new TreeLabel("Failed Tests", TestCaseStatus.Failed, this.getFailedTests(testCases));
+            const passedTests: TreeLabel = new TreeLabel("Passed Tests", TestCaseStatus.Passed, this.getPassedTests(testCases));
+            const notRunTestsLabel: TreeLabel = new TreeLabel("Not Run Tests", TestCaseStatus.None, this.getNotRunTests(testCases));
             
             //this.testsAdditionalData.setValue(notRunTestsLabel.getId(), { collapsibleState: vscode.TreeItemCollapsibleState.Expanded });
             //this.testsAdditionalData.setValue(failedTestsLabel.getId(), { collapsibleState: vscode.TreeItemCollapsibleState.Expanded });

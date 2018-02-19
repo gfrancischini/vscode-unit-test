@@ -1,7 +1,6 @@
 import { RequestHandler, createMessageConnection, StreamMessageReader, StreamMessageWriter, NotificationType } from 'vscode-jsonrpc';
 import { InitializeRequest, InitializeParams, InitializeResult, InitializeError, FileProcessor, TestUpdateNotification, TestCaseUpdateParams } from "./mochaProtocol"
-import { TestCase } from "../../testTreeModel/testCase";
-import { TestOutcome } from "../../testTreeModel/testCaseResult";
+import { TestCase, TestCaseStatus } from "../../testTreeModel/testCase";
 import * as path from "path";
 
 import { escapeRegex } from "../../utils/string"
@@ -100,11 +99,11 @@ function RunMochaProcess(sessionId: number, testCases: Array<TestCase>): any {
                 } catch (err) {
 
                     testCases.forEach((testCase) => {
-                        if (testCase.result.sessionId != sessionId) {
-                            testCase.result.status = TestOutcome.Failed;
-                            testCase.result.sessionId = sessionId;
-                            testCase.result.errorMessage = err.message;
-                            testCase.result.errorStackTrace = err.stack;
+                        if (testCase.sessionId != sessionId) {
+                            testCase.status = TestCaseStatus.Failed;
+                            testCase.sessionId = sessionId;
+                            testCase.errorMessage = err.message;
+                            testCase.errorStackTrace = err.stack;
                             connection.testCaseUpdate({
                                 testCase
                             });
@@ -192,9 +191,9 @@ function RunMochaProcess(sessionId: number, testCases: Array<TestCase>): any {
 
                 const testCase: TestCase = findTestCaseByName(path.basename(currentFilePath), currentFilePath);
                 if (testCase) {
-                    testCase.result.status = TestOutcome.Running;
-                    testCase.result.sessionId = sessionId;
-                    testCase.result.startTime = new Date();
+                    testCase.status = TestCaseStatus.Running;
+                    testCase.sessionId = sessionId;
+                    testCase.startTime = new Date();
 
                     connection.testCaseUpdate({
                         testCase
@@ -210,9 +209,9 @@ function RunMochaProcess(sessionId: number, testCases: Array<TestCase>): any {
 
                 const testCase: TestCase = findTestCaseByName(suite.title, (<any>suite).file);
                 if (testCase) {
-                    testCase.result.status = TestOutcome.Running;
-                    testCase.result.sessionId = sessionId;
-                    testCase.result.startTime = new Date();
+                    testCase.status = TestCaseStatus.Running;
+                    testCase.sessionId = sessionId;
+                    testCase.startTime = new Date();
 
                     connection.testCaseUpdate({
                         testCase
@@ -230,17 +229,17 @@ function RunMochaProcess(sessionId: number, testCases: Array<TestCase>): any {
 
                 const testCase: TestCase = findTestCaseByName(suite.title, (<any>suite).file);
                 if (testCase) {
-                    testCase.result.endTime = new Date();
+                    testCase.endTime = new Date();
 
                     if (qtyOfFailures > 0) {
 
-                        testCase.result.status = TestOutcome.Failed;
+                        testCase.status = TestCaseStatus.Failed;
                     }
                     else if (qtyOfSkip > 0) {
-                        testCase.result.status = TestOutcome.Skipped;
+                        testCase.status = TestCaseStatus.Skipped;
                     }
                     else if (qtyOfSuccess > 0) {
-                        testCase.result.status = TestOutcome.Passed;
+                        testCase.status = TestCaseStatus.Passed;
                     }
                     else {
 
@@ -256,8 +255,8 @@ function RunMochaProcess(sessionId: number, testCases: Array<TestCase>): any {
                 qtyOfSuccess++;
                 const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);
 
-                testCase.result.status = TestOutcome.Passed;
-                testCase.result.endTime = new Date();
+                testCase.status = TestCaseStatus.Passed;
+                testCase.endTime = new Date();
 
                 connection.testCaseUpdate({
                     testCase
@@ -279,10 +278,10 @@ function RunMochaProcess(sessionId: number, testCases: Array<TestCase>): any {
                 }
                 else {
                     const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);
-                    testCase.result.errorMessage = err.message;
-                    testCase.result.errorStackTrace = err.stack;
-                    testCase.result.status = TestOutcome.Failed;
-                    testCase.result.endTime = new Date();
+                    testCase.errorMessage = err.message;
+                    testCase.errorStackTrace = err.stack;
+                    testCase.status = TestCaseStatus.Failed;
+                    testCase.endTime = new Date();
 
                     connection.testCaseUpdate({
                         testCase
@@ -298,17 +297,17 @@ function RunMochaProcess(sessionId: number, testCases: Array<TestCase>): any {
             .on("end", () => {
                 const testCase: TestCase = findTestCaseByName(path.basename(currentFilePath), currentFilePath);
                 if (testCase) {
-                    testCase.result.endTime = new Date();
+                    testCase.endTime = new Date();
 
                     if (qtyOfFailures > 0) {
 
-                        testCase.result.status = TestOutcome.Failed;
+                        testCase.status = TestCaseStatus.Failed;
                     }
                     else if (qtyOfSkip > 0) {
-                        testCase.result.status = TestOutcome.Skipped;
+                        testCase.status = TestCaseStatus.Skipped;
                     }
                     else if (qtyOfSuccess > 0) {
-                        testCase.result.status = TestOutcome.Passed;
+                        testCase.status = TestCaseStatus.Passed;
                     }
                     else {
 
@@ -324,9 +323,9 @@ function RunMochaProcess(sessionId: number, testCases: Array<TestCase>): any {
 
                 const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);
 
-                testCase.result.status = TestOutcome.Running;
-                testCase.result.sessionId = sessionId;
-                testCase.result.startTime = new Date();
+                testCase.status = TestCaseStatus.Running;
+                testCase.sessionId = sessionId;
+                testCase.startTime = new Date();
 
                 connection.testCaseUpdate({
                     testCase

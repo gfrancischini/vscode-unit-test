@@ -1,6 +1,5 @@
 import {GroupBy} from './groupBy'
-import { TestCase } from '../../testTreeModel/testCase';
-import { TestOutcome } from '../../testTreeModel/testCaseResult';
+import { TestCase, TestCaseStatus } from '../../testTreeModel/testCase';
 import { TreeLabel } from '../../testTreeModel/treeLabel'
 
 
@@ -16,7 +15,7 @@ export class GroupByDuration extends GroupBy {
   */
     public getSlowTests(testCases: Array<TestCase>): Array<TestCase> {
         const tests = testCases.filter((test: TestCase) => {
-            if (test.result && test.result.getDurationInMilliseconds() > 1000) {
+            if (test.getDurationInMilliseconds() > 1000) {
                 return true;
             }
             return false;
@@ -29,7 +28,7 @@ export class GroupByDuration extends GroupBy {
     */
     public getMediumTests(testCases: Array<TestCase>): Array<TestCase> {
         const tests = testCases.filter((test: TestCase) => {
-            if (test.result && (test.result.getDurationInMilliseconds() >= 100 && test.result.getDurationInMilliseconds() <= 1000)) {
+            if (test.getDurationInMilliseconds() >= 100 && test.getDurationInMilliseconds() <= 1000) {
                 return true;
             }
             return false;
@@ -42,7 +41,7 @@ export class GroupByDuration extends GroupBy {
     */
     public getFastTests(testCases: Array<TestCase>): Array<TestCase> {
         const tests = testCases.filter((test: TestCase) => {
-            if (test.result && test.result.getDurationInMilliseconds() < 100) {
+            if (test.getDurationInMilliseconds() < 100) {
                 return true;
             }
             return false;
@@ -55,10 +54,10 @@ export class GroupByDuration extends GroupBy {
             const outcomeArray = new Array<TreeLabel>();
 
 
-            const notRunTestsLabel: TreeLabel = new TreeLabel("Not Run Tests", TestOutcome.None, this.getNotRunTests(testCases));
-            const fastTestsLabel: TreeLabel = new TreeLabel("Fast < 100ms", TestOutcome.None, this.getFastTests(testCases));
-            const mediumTestsLabel: TreeLabel = new TreeLabel("Medium >= 100ms", TestOutcome.Failed, this.getMediumTests(testCases));
-            const slowTests: TreeLabel = new TreeLabel("Slow > 1sec", TestOutcome.Passed, this.getSlowTests(testCases));
+            const notRunTestsLabel: TreeLabel = new TreeLabel("Not Run Tests", TestCaseStatus.None, this.getNotRunTests(testCases));
+            const fastTestsLabel: TreeLabel = new TreeLabel("Fast < 100ms", TestCaseStatus.None, this.getFastTests(testCases));
+            const mediumTestsLabel: TreeLabel = new TreeLabel("Medium >= 100ms", TestCaseStatus.None, this.getMediumTests(testCases));
+            const slowTests: TreeLabel = new TreeLabel("Slow > 1sec", TestCaseStatus.None, this.getSlowTests(testCases));
 
             //this.testsAdditionalData.setValue(notRunTestsLabel.getId(), { collapsibleState: vscode.TreeItemCollapsibleState.Expanded });
             //this.testsAdditionalData.setValue(fastTestsLabel.getId(), { collapsibleState: vscode.TreeItemCollapsibleState.Expanded });

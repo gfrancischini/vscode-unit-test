@@ -1,6 +1,5 @@
 import { TreeLabel } from '../../testTreeModel/treeLabel'
-import { TestCase } from '../../testTreeModel/testCase';
-import { TestOutcome } from '../../testTreeModel/testCaseResult';
+import { TestCase, TestCaseStatus } from '../../testTreeModel/testCase';
 import * as vscode from "vscode";
 
 export abstract class GroupBy implements vscode.QuickPickItem{
@@ -19,7 +18,7 @@ export abstract class GroupBy implements vscode.QuickPickItem{
     */
     public getNotRunTests(testCases: Array<TestCase>): Array<TestCase> {
         const tests = testCases.filter((test: TestCase) => {
-            if (test.isTestCase && test.result.status === TestOutcome.None) {
+            if (test.isTestCase && test.status === TestCaseStatus.None) {
                 return true;
             }
             return false;

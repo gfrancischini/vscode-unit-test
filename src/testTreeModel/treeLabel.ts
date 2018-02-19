@@ -1,5 +1,4 @@
-import {TestCase} from "./testCase"
-import {TestOutcome} from "./testCaseResult"
+import {TestCase, TestCaseStatus} from "./testCase"
 
 /**
  * A class to handle the group lables of the tests
@@ -9,11 +8,11 @@ export class TreeLabel {
 
     public title: string;
 
-    private outcome: TestOutcome;
+    private outcome: TestCaseStatus;
 
 
 
-    constructor(displayName: string, outcome: TestOutcome, tests: Array<TestCase> = null) {
+    constructor(displayName: string, outcome: TestCaseStatus, tests: Array<TestCase> = null) {
         this.title = displayName;
         this.children = tests;
         this.outcome = outcome;
@@ -35,7 +34,7 @@ export class TreeLabel {
         return this.children;
     }
 
-    public getOutcome(): TestOutcome {
+    public getOutcome(): TestCaseStatus {
         return this.outcome;
     }
 

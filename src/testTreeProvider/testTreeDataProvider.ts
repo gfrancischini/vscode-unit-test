@@ -1,6 +1,5 @@
 import * as vscode from "vscode";
-import { TestCase } from "../testTreeModel/testCase"
-import { TestOutcome } from "../testTreeModel/testCaseResult"
+import { TestCase, TestCaseStatus } from "../testTreeModel/testCase"
 import { TreeLabel } from "../testTreeModel/treeLabel"
 import { GroupByProvider } from "./groupByProvider"
 import { isExtensionEnabled, isAutoInitializeEnabled } from "../utils/vsconfig"
@@ -43,7 +42,8 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
 
     private testsAdditionalData: Collections.Dictionary<string, TestAdditionalData> = new Collections.Dictionary<string, TestAdditionalData>();
 
-    private rootDir = "C:\\Git\\p1-my-reads\\src\\test";
+    private rootDir = null;
+    //private rootDir = "C:\\Git\\p1-my-reads\\src\\test";
 
     /**
      * Get children method that must be implemented by test tree provider
@@ -107,23 +107,22 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             //}
 
             let appendStringIcon = "";
-            if (item.result.sessionId != this.testService.sessionId) {
+            if (item.sessionId != this.testService.sessionId) {
                 appendStringIcon = "_previousExec";
             }
-            const outcome = item.result ? item.result.status : TestOutcome.None;
+            const outcome = item.status;
             switch (outcome) {
-                case TestOutcome.FatalFailure:
-                case TestOutcome.Failed:
+                case TestCaseStatus.Failed:
                     return getImageResource(`error${appendStringIcon}.svg`);
-                case TestOutcome.None:
+                case TestCaseStatus.None:
                     return getImageResource(`exclamation.svg`);
-                case TestOutcome.NotFound:
+                case TestCaseStatus.NotFound:
                     return getImageResource("interrogation.svg");
-                case TestOutcome.Passed:
+                case TestCaseStatus.Passed:
                     return getImageResource(`checked${appendStringIcon}.svg`);
-                case TestOutcome.Skipped:
+                case TestCaseStatus.Skipped:
                     return getImageResource(`skipped${appendStringIcon}.svg`);
-                case TestOutcome.Running:
+                case TestCaseStatus.Running:
                     return getImageResource(`progress.svg`);
             }
         }
@@ -168,7 +167,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * Create a no test found label
      */
     private createNoTestFoundLabel() {
-        const noTestFoundLabel: TreeLabel = new TreeLabel("No Test Found", TestOutcome.None, null);
+        const noTestFoundLabel: TreeLabel = new TreeLabel("No Test Found", TestCaseStatus.None, null);
         return Promise.resolve([noTestFoundLabel]);
     }
 
@@ -314,13 +313,13 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             this.testOutputChannel.clear();
 
             this.testOutputChannel.appendLine(item.title);
-            this.testOutputChannel.appendLine(`Duration: ${item.result.duration}`);
-            this.testOutputChannel.appendLine(`Start Time: ${item.result.startTime}`);
-            this.testOutputChannel.appendLine(`End Time: ${item.result.endTime}`);
+            this.testOutputChannel.appendLine(`Duration: ${item.getDurationInMilliseconds()}`);
+            this.testOutputChannel.appendLine(`Start Time: ${item.startTime}`);
+            this.testOutputChannel.appendLine(`End Time: ${item.endTime}`);
 
-            if (item.result.status === TestOutcome.Failed) {
-                this.testOutputChannel.appendLine(`Error: ${item.result.errorMessage}`);
-                this.testOutputChannel.appendLine(`Stack Trace: ${item.result.errorStackTrace}`);
+            if (item.status === TestCaseStatus.Failed) {
+                this.testOutputChannel.appendLine(`Error: ${item.errorMessage}`);
+                this.testOutputChannel.appendLine(`Stack Trace: ${item.errorStackTrace}`);
             }
         }
     }
@@ -329,6 +328,8 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * 
      */
     constructor(private context: vscode.ExtensionContext) {
+        //todo: bug here when there is more than one workspace folders
+        this.rootDir = vscode.workspace.workspaceFolders[0].uri.fsPath;
         this.testService = new MochaTestService(this.rootDir);
 
         this.registerCommands(context);
