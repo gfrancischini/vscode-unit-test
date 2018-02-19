@@ -1,5 +1,5 @@
 import { GroupBy } from './groupBy'
-import { TestCase, TestCaseStatus } from '../../testTreeModel/testCase';
+import { TestCase, TestCaseStatus } from '../../testLanguage/protocol';
 import { TreeLabel } from '../../testTreeModel/treeLabel'
 import { TestTreeType } from "../../testTreeModel/treeType"
 

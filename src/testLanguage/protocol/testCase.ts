@@ -1,4 +1,4 @@
-import { PathUtils } from "../utils/path";
+import { PathUtils } from "../../utils/path";
 
 
 /**

@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import { TreeLabel } from '../../testTreeModel/treeLabel'
-import { TestCase, TestCaseStatus } from '../../testTreeModel/testCase';
+import { TestCase, TestCaseStatus } from '../../testLanguage/protocol';
 import { TestTreeType } from "../../testTreeModel/treeType"
 
 

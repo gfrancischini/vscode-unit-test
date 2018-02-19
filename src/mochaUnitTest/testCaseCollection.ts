@@ -1,7 +1,7 @@
 
 import * as Collections from "typescript-collections";
 
-import { TestCase } from '../testTreeModel/testCase';
+import { TestCase } from '../testLanguage/protocol/testCase';
 
 export class TestCaseCollection {
 

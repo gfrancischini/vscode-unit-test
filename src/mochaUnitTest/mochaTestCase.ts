@@ -1,4 +1,4 @@
-import { TestCase } from "../testTreeModel/testCase";
+import { TestCase } from "../testLanguage/protocol";
 
 export class MochaTestCase extends TestCase {
     type: string;

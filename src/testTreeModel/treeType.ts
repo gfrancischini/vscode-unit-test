@@ -1,4 +1,4 @@
-import { TestCase } from "./testCase"
+import { TestCase, TestCaseStatus } from '../testLanguage/protocol';
 import { TreeLabel } from "./treeLabel"
 
 /**

@@ -1,4 +1,4 @@
-import {TestCase, TestCaseStatus} from "./testCase"
+import { TestCase, TestCaseStatus } from '../testLanguage/protocol';
 
 /**
  * A class to handle the group lables of the tests

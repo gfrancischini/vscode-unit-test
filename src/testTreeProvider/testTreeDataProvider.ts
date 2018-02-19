@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
-import { TestCase, TestCaseStatus } from "../testTreeModel/testCase"
+import { TestCase, TestCaseStatus } from "../testLanguage/protocol"
 import { TreeLabel } from "../testTreeModel/treeLabel"
 import { GroupByProvider } from "./groupByProvider"
 import { isExtensionEnabled, isAutoInitializeEnabled } from "../utils/vsconfig"
 import { getImageResource } from "../utils/image"
-import { MochaTestService } from "../mochaUnitTest/mochaTestService"
+import { TestTreeLanguageClient } from "../mochaUnitTest/testTreeLanguageClient"
 import * as Collections from "typescript-collections";
 import { TestTreeType } from "../testTreeModel/treeType"
 
@@ -40,7 +40,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
     /**
      * The test service to discover and run tests
      */
-    private testService: MochaTestService;
+    private testLanguageClient: TestTreeLanguageClient;
 
     /**
      * Group by filter provider that categorizes the test cases
@@ -80,14 +80,14 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             if (item instanceof TreeLabel) {
                 return Promise.resolve(item.getChildren() ? item.getChildren() : []);
             }
-            const filtered = this.testService.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
+            const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
                 return testCase.parendId === item.getId();
             });
             return Promise.resolve(filtered);
         }
         else {
             // if testcase = null means that we are in the root
-            return this.groupByFilter.getSelected().getCategories(this.testService.testCaseCollection.testCasesDictionary.values());
+            return this.groupByFilter.getSelected().getCategories(this.testLanguageClient.testCaseCollection.testCasesDictionary.values());
         }
     }
 
@@ -120,7 +120,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
 
         if (item instanceof TestCase) {
             let appendStringIcon = "";
-            if (item.sessionId != this.testService.sessionId) {
+            if (item.sessionId != this.testLanguageClient.sessionId) {
                 appendStringIcon = "_previousExec";
             }
             const outcome = item.status;
@@ -148,7 +148,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      */
     private discoveryTests() {
         this.status = TestTreeDataProviderStatus.FindingTests;
-        this.testService.discoveryWorkspaceTests(this.rootDir).then((testCases) => {
+        this.testLanguageClient.discoveryWorkspaceTests(this.rootDir).then((testCases) => {
             this.status = TestTreeDataProviderStatus.Ready;
             this._onDidChangeTreeData.fire();
         });
@@ -169,7 +169,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             return vscode.TreeItemCollapsibleState.Expanded;
         }
 
-        const hasChildren: boolean = this.testService.testCaseCollection.testCasesDictionary.values().some((testCase) => {
+        const hasChildren: boolean = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().some((testCase) => {
             return testCase.parendId === item.getId();
         });
 
@@ -217,7 +217,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * Method used to register test service listener like onDitTestCaseChanged 
      */
     private registerTestServiceListeners() {
-        this.testService.onDidTestCaseChanged((test: TestCase) => {
+        this.testLanguageClient.onDidTestCaseChanged((test: TestCase) => {
             this._onDidChangeTreeData.fire();
         });
     }
@@ -243,12 +243,12 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
 
     private runTest(item: TestTreeType) {
         if (item instanceof TreeLabel) {
-            this.testService.runTests(item.getChildren());
+            this.testLanguageClient.runTests(item.getChildren());
         }
         else {
             const testCases = this.findAllChildrens(item.getId());
             testCases.push(item);
-            this.testService.runTests(testCases);
+            this.testLanguageClient.runTests(testCases);
         }
     }
 
@@ -259,7 +259,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
     findAllChildrens(parentId: string): Array<TestCase> {
         const testCases: Array<TestCase> = new Array<TestCase>();
 
-        const filtered = this.testService.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
+        const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
             return testCase.parendId === parentId;
         })
 
@@ -364,13 +364,16 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
     constructor(private context: vscode.ExtensionContext) {
         //todo: bug here when there is more than one workspace folders
         this.rootDir = vscode.workspace.workspaceFolders[0].uri.fsPath;
-        this.testService = new MochaTestService(this.rootDir);
+        this.testLanguageClient = new TestTreeLanguageClient(this.rootDir);
+        this.testLanguageClient.initialize().then((version) => {
+            this.registerCommands(context);
 
-        this.registerCommands(context);
+            this.registerTestServiceListeners();
 
-        this.registerTestServiceListeners();
+            this.discoveryTests();
+        })
 
-        this.discoveryTests();
+        
 
         /*vscode.workspace.onDidChangeConfiguration(() => {
             //this.testService.updateConfiguration(getCurrentAdapterName(), getConfigurationForAdatper());

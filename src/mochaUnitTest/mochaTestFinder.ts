@@ -2,7 +2,7 @@ import * as ts from "typescript";
 import * as fs from "fs-extra";
 import * as path from "path";
 import { MochaTestCase, SuiteItem, DescribeItem, ItItem } from "./MochaTestCase";
-import { TestCase } from "../testTreeModel/testCase";
+import { TestCase } from "../testLanguage/protocol";
 import {TestCaseCollection} from "./testCaseCollection"
 export class MochaTestFinder {
     static testCaseCollection = new TestCaseCollection();
