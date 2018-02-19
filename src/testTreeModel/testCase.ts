@@ -104,11 +104,13 @@ export class TestCase {
      * Return the test duration in milliseconds
      */
     public getDurationInMilliseconds(): number {
-        return this.endTime.getTime() - this.startTime.getTime();
+        if(this.endTime == null || this.startTime == null) {
+            return null;
+        }
+        return new Date(this.endTime).getTime() - new Date(this.startTime).getTime();
     }
 
     constructor() {
-    
         this.status = TestCaseStatus.None;
     }
 
@@ -127,12 +129,6 @@ export class TestCase {
             this.fullTitle =  this.title;
         }
     }
-
-
-
-
-
-
 
     public getId() : string {
         return `${this.title}${this.path}`;
