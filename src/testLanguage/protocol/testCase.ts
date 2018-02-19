@@ -15,12 +15,11 @@ export enum TestCaseStatus {
     Skipped = 0x3,
     //Not found. Test case was not found during execution.
     NotFound = 0x4,
-    //
-    Running = 0x5,
 }
 
 export class TestCase {
 
+    public id: string;
 
     /**
      * The file path that this test belong.
@@ -30,7 +29,7 @@ export class TestCase {
     /**
      * The path of the compiled filed.
      */
-    public outputPath : string;
+    public outputPath: string;
 
     /**
      * The title (name) of the test.
@@ -64,10 +63,10 @@ export class TestCase {
 
     public parendId = null;
 
-    public isTestCase : boolean = true;
-    
+    public isTestCase: boolean = true;
 
-    
+    public isRunning: boolean = false;
+
     /**
      * TestResult.ErrorMessage provides an error message if the test failed.
      */
@@ -103,12 +102,8 @@ export class TestCase {
     /**
      * Return the test duration in milliseconds
      */
-    public getDurationInMilliseconds(): number {
-        if(this.endTime == null || this.startTime == null) {
-            return null;
-        }
-        return new Date(this.endTime).getTime() - new Date(this.startTime).getTime();
-    }
+    duration: number;
+
 
     constructor() {
         this.status = TestCaseStatus.None;
@@ -119,19 +114,19 @@ export class TestCase {
         if (this.parent) {
             var full: string = this.parent.fullTitle;
             if (full) {
-                this.fullTitle =  full + " " + this.title;
+                this.fullTitle = full + " " + this.title;
             }
             else {
-                this.fullTitle =  this.title;
+                this.fullTitle = this.title;
             }
         }
         else {
-            this.fullTitle =  this.title;
+            this.fullTitle = this.title;
         }
     }
 
-    public getId() : string {
-        return `${this.title}${this.path}`;
+    public getId(): string {
+        return this.id
     }
 
 
@@ -148,9 +143,9 @@ export class TestCase {
     /**
      * Any additional info need by extensions
      */
-    protected additionalInfo : object;
+    protected additionalInfo: object;
 
- 
+
     /*getPath(): string {
         return this.path;
     }
@@ -216,15 +211,15 @@ export class TestCase {
         this.column = column;
     }
 
-    
+
 
     setAdditionalInfo(additionalInfo: any): void {
         this.additionalInfo = additionalInfo;
     }
 
-     /**
-     * Return the test display name
-     */
+    /**
+    * Return the test display name
+    */
     /*public getDisplayName(): string {
         if (this.result) {
             return `${this.title} - ${this.result.getDurationInMilliseconds()} ms`;

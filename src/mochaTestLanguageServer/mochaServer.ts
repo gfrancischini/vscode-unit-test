@@ -1,15 +1,15 @@
-import { RequestHandler, createMessageConnection, StreamMessageReader, StreamMessageWriter, NotificationType } from 'vscode-jsonrpc';
+import { StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc';
 import {
     InitializeRequest, InitializeParams, InitializeResult, InitializeError,
     RunTestCasesParams, RunTestCasesResult,
-    TestCaseUpdateNotification, TestCaseUpdateParams
-} from "../../testLanguage/protocol"
-import { TestCase, TestCaseStatus } from "../../testLanguage/protocol";
+    TestCaseUpdateNotification, TestCaseUpdateParams, DiscoveryTestCasesParams, DiscoveryTestCasesResult
+} from "../testLanguage/protocol"
+import { TestCase, TestCaseStatus } from "../testLanguage/protocol";
 import * as path from "path";
-import { escapeRegex } from "../../utils/string"
-import { TestLanguageServer } from "../../testLanguage/server/testLanguageServer"
+import { escapeRegex } from "../utils/string"
+import { TestLanguageServer } from "../testLanguage/server/testLanguageServer"
 import { RunMochaProcess } from './mochaRunner'
-
+import {MochaTestFinder} from "./mochaTestFinder"
 class MochaTestLanguageServer extends TestLanguageServer {
     public registerListeners() {
         super.registerListeners();
@@ -21,6 +21,17 @@ class MochaTestLanguageServer extends TestLanguageServer {
                 }
             });
         });
+
+        this.connection.onDiscoveryTestCases((params : DiscoveryTestCasesParams) : DiscoveryTestCasesResult => {
+            const testCases = new Array<TestCase>();
+            params.filePaths.forEach((path) => {
+                testCases.push(...MochaTestFinder.findTestCases(path));
+            })
+            return {
+                testCases
+            }
+        });
+
     }
 }
 

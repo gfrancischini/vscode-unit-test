@@ -1,7 +1,7 @@
 import { GroupBy } from './groupBy'
 import { TestCase, TestCaseStatus } from '../../testLanguage/protocol';
-import { TreeLabel } from '../../testTreeModel/treeLabel'
-import { TestTreeType } from "../../testTreeModel/treeType"
+import { TreeLabel } from '../treeLabel'
+import { TestTreeType } from "../treeType"
 
 export class GroupByDuration extends GroupBy {
     static TYPE: string = "GroupByDuration";
@@ -15,7 +15,7 @@ export class GroupByDuration extends GroupBy {
      */
     public getSlowTests(testCases: Array<TestCase>): Array<TestCase> {
         const tests = testCases.filter((test: TestCase) => {
-            if (test.status != TestCaseStatus.None && test.getDurationInMilliseconds() > 1000) {
+            if (test.status != TestCaseStatus.None && test.duration > 1000) {
                 return true;
             }
             return false;
@@ -28,7 +28,7 @@ export class GroupByDuration extends GroupBy {
      */
     public getMediumTests(testCases: Array<TestCase>): Array<TestCase> {
         const tests = testCases.filter((test: TestCase) => {
-            if (test.status != TestCaseStatus.None && test.getDurationInMilliseconds() >= 100 && test.getDurationInMilliseconds() <= 1000) {
+            if (test.status != TestCaseStatus.None && test.duration >= 100 && test.duration <= 1000) {
                 return true;
             }
             return false;
@@ -41,7 +41,7 @@ export class GroupByDuration extends GroupBy {
      */
     public getFastTests(testCases: Array<TestCase>): Array<TestCase> {
         const tests = testCases.filter((test: TestCase) => {
-            if (test.status != TestCaseStatus.None && test.getDurationInMilliseconds() < 100) {
+            if (test.status != TestCaseStatus.None && test.duration < 100) {
                 return true;
             }
             return false;

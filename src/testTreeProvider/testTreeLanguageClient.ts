@@ -1,11 +1,10 @@
 import * as vscode from "vscode";
 import { getAllTestFilesInDirectory } from '../utils/directory'
-import { MochaTestFinder } from './mochaTestFinder';
-import { TestCase, RunTestCasesResult } from '../testLanguage/protocol';
+import { TestCase, RunTestCasesResult, DiscoveryTestCasesResult } from '../testLanguage/protocol';
 import Event, { Emitter } from "../base/common/Event";
 import * as Collections from "typescript-collections";
 import * as path from "path";
-import { startServer } from "../mochaUnitTest/mochaProcess/mochaServerHelper";
+import { startServer } from "../utils/server";
 import { TestCaseCollection } from "./testCaseCollection"
 import { TestLanguageClient } from "../testLanguage/client/testLanguageClient"
 import { StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc';
@@ -59,8 +58,6 @@ export class TestTreeLanguageClient extends TestLanguageClient {
         super.registerListeners();
 
         this.connection.onTestCaseUpdated((params: TestCaseUpdateParams): any => {
-            console.log(params);
-
             let testCase: TestCase = Object.assign(new TestCase(), params.testCase);
 
             this.testCaseCollection.push(testCase);
@@ -93,8 +90,15 @@ export class TestTreeLanguageClient extends TestLanguageClient {
 
                 testFilesPath.forEach((testFilePath, i) => {
                     progress.report({ message: `Discovering Tests: ${i}/${testFilesPath.length}` });
-                    const results = MochaTestFinder.findTestCases(testFilePath);
-                    this.testCaseCollection = results;
+
+                    this.connection.discoveryTestCases({
+                        filePaths: [testFilePath]
+                    }).then((result: DiscoveryTestCasesResult) => {
+                        result.testCases.forEach((testCase) => {
+                            let convertedTestCase: TestCase = Object.assign(new TestCase(), testCase);
+                            this.testCaseCollection.push(convertedTestCase);
+                        });
+                    });
                 });
 
                 //todo: we need to findtest cases and them do the diff between new tests and excluded ones
@@ -113,14 +117,19 @@ export class TestTreeLanguageClient extends TestLanguageClient {
     public runTests(testCases: Array<TestCase>, debuggingEnabled: boolean = false) {
         this.sessionId++;
 
-
-
-        this.connection.runTestCases({
-            sessionId: this.sessionId,
-            testCases
-        }).then((result: RunTestCasesResult) => {
-
-        });
+        vscode.window.withProgress(
+            { location: vscode.ProgressLocation.Window, title: "Test Adapter" },
+            progress => {
+                progress.report({ message: `Running Tests` });
+                return new Promise((resolve, reject) => {
+                    this.connection.runTestCases({
+                        sessionId: this.sessionId,
+                        testCases
+                    }).then((result: RunTestCasesResult) => {
+                        return resolve(null);
+                    });
+                });
+            });
     }
 
 

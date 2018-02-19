@@ -22,7 +22,7 @@ export interface RunTestCasesError {
 
 
 export namespace RunTestCasesRequest {
-	export const type = new RequestType<RunTestCasesParams, RunTestCasesResult, RunTestCasesError, void>('discoveryTestCases');
+	export const type = new RequestType<RunTestCasesParams, RunTestCasesResult, RunTestCasesError, void>('runTestCases');
 }
 
 

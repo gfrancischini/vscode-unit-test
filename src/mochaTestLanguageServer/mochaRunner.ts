@@ -3,11 +3,11 @@ import {
     InitializeRequest, InitializeParams, InitializeResult, InitializeError,
     RunTestCasesParams, RunTestCasesResult,
     TestCaseUpdateNotification, TestCaseUpdateParams
-} from "../../testLanguage/protocol"
-import { TestCase, TestCaseStatus } from "../../testLanguage/protocol";
+} from "../testLanguage/protocol"
+import { TestCase, TestCaseStatus } from "../testLanguage/protocol";
 import * as path from "path";
-import { escapeRegex } from "../../utils/string"
-import { IConnection, TestLanguageServer } from "../../testLanguage/server/testLanguageServer"
+import { escapeRegex } from "../utils/string"
+import { IConnection, TestLanguageServer } from "../testLanguage/server/testLanguageServer"
 
 
 function calculateGrep(testCase: TestCase) {
@@ -110,10 +110,14 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
 
                     testCases.forEach((testCase) => {
                         if (testCase.sessionId != sessionId) {
+                            testCase.isRunning = false;
                             testCase.status = TestCaseStatus.Failed;
                             testCase.sessionId = sessionId;
                             testCase.errorMessage = err.message;
                             testCase.errorStackTrace = err.stack;
+                            testCase.startTime = new Date();
+                            testCase.endTime = new Date();
+                            testCase.duration = 0;
                             connection.testCaseUpdate({
                                 testCase
                             });
@@ -173,7 +177,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
 
                 const testCase: TestCase = findTestCaseByName(path.basename(currentFilePath), currentFilePath);
                 if (testCase) {
-                    testCase.status = TestCaseStatus.Running;
+                    testCase.isRunning = true;
                     testCase.sessionId = sessionId;
                     testCase.startTime = new Date();
 
@@ -191,7 +195,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
 
                 const testCase: TestCase = findTestCaseByName(suite.title, (<any>suite).file);
                 if (testCase) {
-                    testCase.status = TestCaseStatus.Running;
+                    testCase.isRunning = true;
                     testCase.sessionId = sessionId;
                     testCase.startTime = new Date();
 
@@ -211,7 +215,9 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
 
                 const testCase: TestCase = findTestCaseByName(suite.title, (<any>suite).file);
                 if (testCase) {
+                    testCase.isRunning = false;
                     testCase.endTime = new Date();
+                    testCase.duration =  new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
 
                     if (qtyOfFailures > 0) {
 
@@ -236,9 +242,10 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
             .on("pass", (test) => {
                 qtyOfSuccess++;
                 const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);
-
+                testCase.isRunning = false;
                 testCase.status = TestCaseStatus.Passed;
                 testCase.endTime = new Date();
+                testCase.duration =  new Date(this.endTime).getTime() - new Date(this.startTime).getTime();
 
                 connection.testCaseUpdate({
                     testCase
@@ -260,10 +267,12 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
                 }
                 else {
                     const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);
+                    testCase.isRunning = false;
                     testCase.errorMessage = err.message;
                     testCase.errorStackTrace = err.stack;
                     testCase.status = TestCaseStatus.Failed;
                     testCase.endTime = new Date();
+                    testCase.duration =  new Date(this.endTime).getTime() - new Date(this.startTime).getTime();
 
                     connection.testCaseUpdate({
                         testCase
@@ -279,7 +288,9 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
             .on("end", () => {
                 const testCase: TestCase = findTestCaseByName(path.basename(currentFilePath), currentFilePath);
                 if (testCase) {
+                    testCase.isRunning = false;
                     testCase.endTime = new Date();
+                    testCase.duration =  new Date(this.endTime).getTime() - new Date(this.startTime).getTime();
 
                     if (qtyOfFailures > 0) {
 
@@ -305,7 +316,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
 
                 const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);
 
-                testCase.status = TestCaseStatus.Running;
+                testCase.isRunning = true;
                 testCase.sessionId = sessionId;
                 testCase.startTime = new Date();
 

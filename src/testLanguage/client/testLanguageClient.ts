@@ -1,8 +1,9 @@
 import { RequestHandler, createMessageConnection, StreamMessageReader, StreamMessageWriter, NotificationType } from 'vscode-jsonrpc';
 import {
     InitializeRequest, InitializeParams, InitializeResult, InitializeError,
+    DiscoveryTestCasesRequest, DiscoveryTestCasesParams, DiscoveryTestCasesResult, DiscoveryTestCasesError,
     RunTestCasesRequest, RunTestCasesParams, RunTestCasesResult, RunTestCasesError,
-    TestCaseUpdateNotification, TestCaseUpdateParams
+    TestCaseUpdateNotification, TestCaseUpdateParams, 
 } from "../../testLanguage/protocol"
 import { TestCase, TestCaseStatus } from "../../testLanguage/protocol";
 import * as path from "path";
@@ -11,6 +12,7 @@ export interface IConnection {
 
     listen(): void;
     initialize(params: InitializeParams): Thenable<InitializeResult>;
+    discoveryTestCases(params: DiscoveryTestCasesParams): Thenable<DiscoveryTestCasesResult>;
     runTestCases(params: RunTestCasesParams): Thenable<RunTestCasesResult>;
     onTestCaseUpdated(handler: any): void;
 }
@@ -29,6 +31,7 @@ export class TestLanguageClient {
         let result: IConnection = {
             listen: (): void => msgConnection.listen(),
             initialize: (params: InitializeParams) => msgConnection.sendRequest(InitializeRequest.type, params),
+            discoveryTestCases: (params: DiscoveryTestCasesParams) => msgConnection.sendRequest(DiscoveryTestCasesRequest.type, params),
             runTestCases: (params: RunTestCasesParams) => msgConnection.sendRequest(RunTestCasesRequest.type, params),
             onTestCaseUpdated: (handler) => msgConnection.onNotification(TestCaseUpdateNotification.type, handler),
         }

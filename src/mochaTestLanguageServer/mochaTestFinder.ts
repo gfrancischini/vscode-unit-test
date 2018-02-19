@@ -3,15 +3,14 @@ import * as fs from "fs-extra";
 import * as path from "path";
 import { MochaTestCase, SuiteItem, DescribeItem, ItItem } from "./MochaTestCase";
 import { TestCase } from "../testLanguage/protocol";
-import {TestCaseCollection} from "./testCaseCollection"
 export class MochaTestFinder {
-    static testCaseCollection = new TestCaseCollection();
+    private static testCases = new Array<TestCase>();
     /**
      * Find test cases in the given file
      * @param filePath File path to search for test cases
      * @return Array of found test cases
      */
-    public static findTestCases(filePath: string): TestCaseCollection {
+    public static findTestCases(filePath: string): Array<TestCase> {
         const textTestFile: string = fs.readFileSync(filePath).toString();
         const sourceFile: ts.SourceFile = ts.createSourceFile(
             filePath, textTestFile, ts.ScriptTarget.Latest, false, ts.ScriptKind.Unknown);
@@ -24,12 +23,14 @@ export class MochaTestFinder {
         testCase.setParent(null);
         testCase.fullTitle = "";
         testCase.isTestCase = false;
-        MochaTestFinder.testCaseCollection.push(testCase);
+        testCase.id = `${testCase.title}${testCase.path}`
+        
+        MochaTestFinder.testCases.push(testCase);
 
 
         //return sourceFile.statements.map(statement => MochaTestFinder.visit(sourceFile, statement, null)).filter(o => o);
          sourceFile.statements.map(statement => MochaTestFinder.visit(sourceFile, statement, testCase));
-         return MochaTestFinder.testCaseCollection;
+         return MochaTestFinder.testCases;
     }
 
     /**
@@ -59,6 +60,7 @@ export class MochaTestFinder {
                         result.setPath(sourceFile.fileName);
                         result.setParent(parent);
                         result.calculateFullTitle();
+                        result.id = `${result.title}${result.path}`
                         let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result);
                         if (!Array.isArray(children)) {
                             children = [children];
@@ -66,7 +68,7 @@ export class MochaTestFinder {
                         result.isTestCase = false;
                         
 
-                        MochaTestFinder.testCaseCollection.push(result);
+                        MochaTestFinder.testCases.push(result);
 
                         return result;
                     }
@@ -84,6 +86,7 @@ export class MochaTestFinder {
                         result.setPath(sourceFile.fileName);
                         result.setParent(parent);
                         result.calculateFullTitle();
+                        result.id = `${result.title}${result.path}`
                         result.isTestCase = false;
                         let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result);
                         if (!Array.isArray(children)) {
@@ -93,7 +96,7 @@ export class MochaTestFinder {
                        
                        
 
-                        MochaTestFinder.testCaseCollection.push(result);
+                        MochaTestFinder.testCases.push(result);
 
                         return result;
                     }
@@ -108,12 +111,13 @@ export class MochaTestFinder {
                         result.setPath(sourceFile.fileName);
                         result.parendId = parent != null && parent.getId();
                         result.setParent(parent);
+                        result.id = `${result.title}${result.path}`
                         result.calculateFullTitle();
 
 
                        
                         
-                        MochaTestFinder.testCaseCollection.push(result);
+                        MochaTestFinder.testCases.push(result);
 
                         return result;
                     }

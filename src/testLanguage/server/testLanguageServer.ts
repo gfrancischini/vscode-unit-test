@@ -1,7 +1,7 @@
 import { RequestHandler, createMessageConnection, StreamMessageReader, StreamMessageWriter, NotificationType } from 'vscode-jsonrpc';
 import {
     InitializeRequest, InitializeParams, InitializeResult, InitializeError,
-    RunTestCasesRequest,
+    RunTestCasesRequest,DiscoveryTestCasesRequest,
     TestCaseUpdateNotification, TestCaseUpdateParams
 } from "../../testLanguage/protocol"
 import { TestCase, TestCaseStatus } from "../../testLanguage/protocol";
@@ -11,6 +11,7 @@ export interface IConnection {
     listen(): void;
     onInitialize(handler: any): void;
     onRunTestCases(handler: any): void;
+    onDiscoveryTestCases(handler: any): void;
     testCaseUpdate(params: TestCaseUpdateParams): void;
 }
 
@@ -29,8 +30,8 @@ export class TestLanguageServer {
             listen: (): void => msgConnection.listen(),
             onInitialize: (handler) => msgConnection.onRequest(InitializeRequest.type, handler),
             onRunTestCases: (handler) => msgConnection.onRequest(RunTestCasesRequest.type, handler),
+            onDiscoveryTestCases: (handler) => msgConnection.onRequest(DiscoveryTestCasesRequest.type, handler),
             testCaseUpdate: (params: TestCaseUpdateParams) => msgConnection.sendNotification(TestCaseUpdateNotification.type, params)
-
         }
 
         return result;

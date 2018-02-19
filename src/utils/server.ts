@@ -4,7 +4,7 @@ import * as path from "path";
 import * as fs from "fs";
 
 export function startServer(cwd: string) {
-    const modulePath: string = path.join(path.dirname(module.filename), "mochaServer.js");
+    const modulePath: string = path.join(path.dirname(module.filename), "..", "mochaTestLanguageServer", "mochaServer.js");
 
     const forkArgs: Array<any> = [];
     const spawnArgs = [];

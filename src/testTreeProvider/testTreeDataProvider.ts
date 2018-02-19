@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 import { TestCase, TestCaseStatus } from "../testLanguage/protocol"
-import { TreeLabel } from "../testTreeModel/treeLabel"
+import { TreeLabel } from "./treeLabel"
 import { GroupByProvider } from "./groupByProvider"
 import { isExtensionEnabled, isAutoInitializeEnabled } from "../utils/vsconfig"
 import { getImageResource } from "../utils/image"
-import { TestTreeLanguageClient } from "../mochaUnitTest/testTreeLanguageClient"
+import { TestTreeLanguageClient } from "./testTreeLanguageClient"
 import * as Collections from "typescript-collections";
-import { TestTreeType } from "../testTreeModel/treeType"
+import { TestTreeType } from "./treeType"
 
 /**
  * Register the test tree explorer
@@ -119,6 +119,9 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         }
 
         if (item instanceof TestCase) {
+            if(item.isRunning) {
+                return getImageResource(`progress.svg`);
+            }
             let appendStringIcon = "";
             if (item.sessionId != this.testLanguageClient.sessionId) {
                 appendStringIcon = "_previousExec";
@@ -134,9 +137,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
                 case TestCaseStatus.Passed:
                     return getImageResource(`checked${appendStringIcon}.svg`);
                 case TestCaseStatus.Skipped:
-                    return getImageResource(`skipped${appendStringIcon}.svg`);
-                case TestCaseStatus.Running:
-                    return getImageResource(`progress.svg`);
+                    return getImageResource(`skipped${appendStringIcon}.svg`);                   
             }
         }
         return getImageResource("interrogation.svg");
@@ -346,7 +347,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             this.testResultOutputChannel.appendLine(`Source: ${item.path}:${item.line}:${item.column}`);
 
             if (item.status != TestCaseStatus.None) {
-                this.testResultOutputChannel.appendLine(`Duration: ${item.getDurationInMilliseconds()}`);
+                this.testResultOutputChannel.appendLine(`Duration: ${item.duration}`);
                 this.testResultOutputChannel.appendLine(`Start Time: ${item.startTime}`);
                 this.testResultOutputChannel.appendLine(`End Time: ${item.endTime}`);
 

@@ -1,7 +1,7 @@
 import { GroupBy } from './groupBy'
 import { TestCase, TestCaseStatus } from '../../testLanguage/protocol';
-import { TreeLabel } from '../../testTreeModel/treeLabel'
-import { TestTreeType } from "../../testTreeModel/treeType"
+import { TreeLabel } from '../treeLabel'
+import { TestTreeType } from "../treeType"
 
 export class GroupByFile extends GroupBy {
     static TYPE: string = "GroupByFile";
