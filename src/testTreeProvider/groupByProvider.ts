@@ -2,28 +2,38 @@ import * as vscode from "vscode";
 import { GroupBy } from './groupBy/groupBy'
 import { GroupByDuration } from "./groupBy/groupByDuration";
 import { GroupByOutcome } from "./groupBy/groupByOutcome";
+import { GroupByFile } from "./groupBy/groupByFile";
 
 export class GroupByProvider {
+    /**
+     * The available groupby options
+     */
     private items: Array<GroupBy> = new Array<GroupBy>();
 
+    /**
+     * The current selected item
+     */
     private selected: GroupBy;
 
     constructor() {
-        //const groupByOutcome = new GroupByQuickPickItem(GroupByQuickPickItemType.Outcome, "Outcome", "Groups tests by execution results: Failed Tests, Skipped Tests, Passed Tests.")
-        //this.items.push(groupByOutcome);
-        //this.items.push(new GroupByQuickPickItem(GroupByQuickPickItemType.Duration, "Duration", "Groups test by execution time: Fast, Medium, and Slow."));
-        //this.items.push(new GroupByQuickPickItem(GroupByQuickPickItemType.Class, "Class", "Groups tests by method class"));
-
         this.items.push(new GroupByOutcome());
         this.items.push(new GroupByDuration());
+        this.items.push(new GroupByFile());
         
         this.selected = this.items[0];
     }
 
+    /** 
+     * Return the quick pick placeholder options 
+     */
     getQuickPickOptions(): vscode.QuickPickOptions {
         return { placeHolder: "Select how you would like to group you test files" };
     }
 
+    /** 
+     * Show the quick pick options
+     * @return the avilable quick pick options
+     */
     show(): Promise<GroupBy> {
 
         return new Promise<GroupBy>((resolve, reject) => {
@@ -36,11 +46,11 @@ export class GroupByProvider {
         });
     }
 
+    /** 
+     * Get the current selected group by filter
+     * @return the selected groupby filter 
+     */
     getSelected(): GroupBy {
         return this.selected;
     }
-
-
-
-
 }

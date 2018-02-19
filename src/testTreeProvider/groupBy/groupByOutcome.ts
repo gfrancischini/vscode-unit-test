@@ -1,7 +1,7 @@
 import { GroupBy } from './groupBy'
 import { TestCase, TestCaseStatus } from '../../testTreeModel/testCase';
 import { TreeLabel } from '../../testTreeModel/treeLabel'
-
+import { TestTreeType } from "../../testTreeModel/treeType"
 
 export class GroupByOutcome extends GroupBy {
     static TYPE: string = "GroupByOutcome";
@@ -37,20 +37,18 @@ export class GroupByOutcome extends GroupBy {
         return tests;
     }
 
-
-    public getCategories(testCases: Array<TestCase>) {
-        return new Promise<Array<TreeLabel>>((resolve, reject) => {
+    /**
+     * Return a promise of Array<TestTreeType> that has all the test classified by a certain logic.
+     * Group the test by status (Not Run, Failed, Success)
+     * @param testCases The available test cases
+     */
+    public getCategories(testCases: Array<TestCase>): Promise<Array<TestTreeType>> {
+        return new Promise<Array<TestTreeType>>((resolve, reject) => {
             const outcomeArray = new Array<TreeLabel>();
-
-            //const testModel: TestModel = this.testService.getModel();
 
             const failedTestsLabel: TreeLabel = new TreeLabel("Failed Tests", TestCaseStatus.Failed, this.getFailedTests(testCases));
             const passedTests: TreeLabel = new TreeLabel("Passed Tests", TestCaseStatus.Passed, this.getPassedTests(testCases));
             const notRunTestsLabel: TreeLabel = new TreeLabel("Not Run Tests", TestCaseStatus.None, this.getNotRunTests(testCases));
-            
-            //this.testsAdditionalData.setValue(notRunTestsLabel.getId(), { collapsibleState: vscode.TreeItemCollapsibleState.Expanded });
-            //this.testsAdditionalData.setValue(failedTestsLabel.getId(), { collapsibleState: vscode.TreeItemCollapsibleState.Expanded });
-            //this.testsAdditionalData.setValue(passedTests.getId(), { collapsibleState: vscode.TreeItemCollapsibleState.Expanded });
 
             // only add filters if there is children to display
             if (failedTestsLabel.getChildrenLenght() > 0) {
@@ -62,10 +60,8 @@ export class GroupByOutcome extends GroupBy {
             if (notRunTestsLabel.getChildrenLenght() > 0) {
                 outcomeArray.push(notRunTestsLabel);
             }
-            
 
             resolve(outcomeArray);
-
         });
     }
 }

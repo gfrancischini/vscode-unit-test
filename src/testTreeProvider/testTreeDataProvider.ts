@@ -6,6 +6,7 @@ import { isExtensionEnabled, isAutoInitializeEnabled } from "../utils/vsconfig"
 import { getImageResource } from "../utils/image"
 import { MochaTestService } from "../mochaUnitTest/mochaTestService"
 import * as Collections from "typescript-collections";
+import { TestTreeType } from "../testTreeModel/treeType"
 
 export function RegisterVSTestTreeProvider(context: vscode.ExtensionContext) {
     let testTreeDataProvider: TestTreeDataProvider;
@@ -14,10 +15,7 @@ export function RegisterVSTestTreeProvider(context: vscode.ExtensionContext) {
 }
 
 
-/**
- * Type that the tree provider handles
- */
-type TestTreeType = TreeLabel | TestCase;
+
 
 /**
  * Additional data to help the tree data provider

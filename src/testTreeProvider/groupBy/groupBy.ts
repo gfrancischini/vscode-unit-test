@@ -1,6 +1,10 @@
+import * as vscode from "vscode";
+
 import { TreeLabel } from '../../testTreeModel/treeLabel'
 import { TestCase, TestCaseStatus } from '../../testTreeModel/testCase';
-import * as vscode from "vscode";
+import { TestTreeType } from "../../testTreeModel/treeType"
+
+
 
 export abstract class GroupBy implements vscode.QuickPickItem{
     public type: string;
@@ -26,7 +30,9 @@ export abstract class GroupBy implements vscode.QuickPickItem{
         return tests;
     }
 
-    //this.items.push(new GroupByQuickPickItem(GroupByQuickPickItemType.Duration, "Duration", "Groups test by execution time: Fast, Medium, and Slow."));
-
-    public abstract getCategories(testCases: Array<TestCase>): Promise<Array<TreeLabel>>;
+    /**
+     * Return a promise of Array<TestTreeType> that has all the test classified by a certain logic
+     * @param testCases The available test cases
+     */
+    public abstract getCategories(testCases: Array<TestCase>): Promise<Array<TestTreeType>>;
 }
