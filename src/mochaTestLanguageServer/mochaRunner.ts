@@ -101,7 +101,6 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
         public runMocha(mocha: Mocha): Promise<any> {
             return new Promise((resolve, reject) => {
                 const callback: any = (failures: number) => {
-                    //mochaProcessServer.sendNotifyOnTestFrameworkEnd(new MochaTestFrameworkDetail(qtyOfTests, failures));
                     resolve();
                 };
                 try {
@@ -124,8 +123,6 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
                         }
                     })
 
-                    //mochaProcessServer.sendNotifyOnTestFrameworkException(new MochaProcessTestCaseUpdate("", "",
-                    //    this.filePath, "", 0, err.message, err.stack));
                     resolve();
 
                     console.log("err: ");

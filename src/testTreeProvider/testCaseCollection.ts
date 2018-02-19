@@ -52,4 +52,25 @@ export class TestCaseCollection {
         });
         this.testCases.push(newTestCase);
     }*/
+
+
+    findAllChildrens(parentId: string): Array<TestCase> {
+        const testCases: Array<TestCase> = new Array<TestCase>();
+
+        const filtered = this.testCasesDictionary.values().filter((testCase) => {
+            return testCase.parendId === parentId;
+        })
+
+        testCases.push(...filtered);
+
+        filtered.forEach((testCase) => {
+            testCases.push(...this.findAllChildrens(testCase.getId()));
+        })
+
+        return testCases;
+    }
+
+    findAllParents() {
+
+    }
 }

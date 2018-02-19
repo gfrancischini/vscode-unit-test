@@ -58,10 +58,27 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
     private status: TestTreeDataProviderStatus = TestTreeDataProviderStatus.None;
 
     private rootDir = null;
-    //private rootDir = "C:\\Git\\p1-my-reads\\src\\test";
 
+    /**
+     * Create the test result output channel
+     */
     private testResultOutputChannel = vscode.window.createOutputChannel('Test Result');
 
+    /**
+     * 
+     */
+    constructor(private context: vscode.ExtensionContext) {
+        //todo: bug here when there is more than one workspace folders
+        this.rootDir = vscode.workspace.workspaceFolders[0].uri.fsPath;
+        this.testLanguageClient = new TestTreeLanguageClient(this.rootDir);
+        this.testLanguageClient.initialize().then((version) => {
+            this.registerCommands(context);
+
+            this.registerTestServiceListeners();
+
+            this.discoveryTests();
+        });
+    }
 
     /**
      * Get children method that must be implemented by test tree provider
@@ -119,7 +136,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         }
 
         if (item instanceof TestCase) {
-            if(item.isRunning) {
+            if (item.isRunning) {
                 return getImageResource(`progress.svg`);
             }
             let appendStringIcon = "";
@@ -137,7 +154,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
                 case TestCaseStatus.Passed:
                     return getImageResource(`checked${appendStringIcon}.svg`);
                 case TestCaseStatus.Skipped:
-                    return getImageResource(`skipped${appendStringIcon}.svg`);                   
+                    return getImageResource(`skipped${appendStringIcon}.svg`);
             }
         }
         return getImageResource("interrogation.svg");
@@ -177,7 +194,6 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         return hasChildren ? vscode.TreeItemCollapsibleState.Collapsed : null;
     }
 
-
     /**
      * Create a no test found label
      */
@@ -202,8 +218,6 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         return Promise.resolve([label]);
     }
 
-
-
     /**
      * Run when the group by command is called
      */
@@ -212,7 +226,6 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             this.refrehTestExplorer(null);
         })
     }
-
 
     /** 
      * Method used to register test service listener like onDitTestCaseChanged 
@@ -223,10 +236,11 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         });
     }
 
+    /**
+     * Open the test case location
+     * @param item 
+     */
     private onCommandGoToTestLocation(item: TestTreeType) {
-        //this.toggleItemCollapsibleState(item);
-        //this.selectedItem = item;
-
         if (item instanceof TestCase) {
 
             const uri: string = item.path;
@@ -234,7 +248,6 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
                 vscode.window.showTextDocument(result);
                 const editor = vscode.window.activeTextEditor;
 
-                //decrement 1 here because vscode is 0 base line index
                 const range = editor.document.lineAt(item.line).range;
                 editor.selection = new vscode.Selection(range.start, range.start);
                 editor.revealRange(range);
@@ -242,36 +255,38 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         }
     }
 
+    /**
+     * Command for run all test cases
+     */
+    private onCommandRunAllTests() {
+        /*const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
+            return testCase.parendId == null;
+        })
+        filtered.forEach((testCase) => {
+
+        })
+        const testCases = this.testLanguageClient.testCaseCollection.findAllChildrens(item.getId());
+            testCases.push(item);
+        this.testLanguageClient.runTests(filtered);*/
+        //not implemented yet
+    }
+
+    /**
+     * Run a specific test case item
+     * @param item 
+     */
     private runTest(item: TestTreeType) {
         if (item instanceof TreeLabel) {
             this.testLanguageClient.runTests(item.getChildren());
         }
         else {
-            const testCases = this.findAllChildrens(item.getId());
+            const testCases = this.testLanguageClient.testCaseCollection.findAllChildrens(item.getId());
             testCases.push(item);
             this.testLanguageClient.runTests(testCases);
         }
     }
 
-    findAllParents() {
-
-    }
-
-    findAllChildrens(parentId: string): Array<TestCase> {
-        const testCases: Array<TestCase> = new Array<TestCase>();
-
-        const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
-            return testCase.parendId === parentId;
-        })
-
-        testCases.push(...filtered);
-
-        filtered.forEach((testCase) => {
-            testCases.push(...this.findAllChildrens(testCase.getId()));
-        })
-
-        return testCases;
-    }
+  
 
     /**
      * Register test explorer commands
@@ -294,14 +309,12 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             () => this.discoveryTests());
         context.subscriptions.push(refreshExplorerCommand);
 
+        //register the run selected test command
         const runCommand = vscode.commands.registerCommand("unit.test.execution.runSelected",
             (item) => {
                 if (item) {
                     this.runTest(item);
                 }
-                //else {
-                //    this.runTests(this.selectedItem);
-                //}
             });
         context.subscriptions.push(runCommand);
 
@@ -310,35 +323,17 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             event => this.onCommandOpenTestCaseResult(event));
         context.subscriptions.push(showTestResultCommand);
 
+        //register the run all test cases command
+        const runAllTestCommand = vscode.commands.registerCommand("unit.test.execution.runAll",
+            () => this.onCommandRunAllTests());
+        context.subscriptions.push(runAllTestCommand);
 
-        /*
-                const debugCommand = vscode.commands.registerCommand("vstest.execution.debugSelected",
-                    (item) => {
-                        if (item) {
-                            this.debugTests(item);
-                        }
-                        else {
-                            this.debugTests(this.selectedItem);
-                        }
-                    });
-                context.subscriptions.push(debugCommand);
-        
-                const restartExplorerCommand = vscode.commands.registerCommand("vstest.explorer.restart",
-                    () => this.restart());
-                context.subscriptions.push(restartExplorerCommand);
-        
-        
-        
-                
-        
-                const runAllTestCommand = vscode.commands.registerCommand("vstest.execution.runAll",
-                    () => this.runAllTests());
-                context.subscriptions.push(runAllTestCommand);
-        
-                const initializeTestExplorer = vscode.commands.registerCommand("vstest.explorer.initialize", event => this.initialize());
-                context.subscriptions.push(showTestResult);*/
     }
 
+    /**
+     * Open the output panel test case result and show the test case result
+     * @param item 
+     */
     private onCommandOpenTestCaseResult(item: TestTreeType) {
         if (item instanceof TestCase) {
             this.testResultOutputChannel.clear();
@@ -359,58 +354,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         }
     }
 
-    /**
-     * 
-     */
-    constructor(private context: vscode.ExtensionContext) {
-        //todo: bug here when there is more than one workspace folders
-        this.rootDir = vscode.workspace.workspaceFolders[0].uri.fsPath;
-        this.testLanguageClient = new TestTreeLanguageClient(this.rootDir);
-        this.testLanguageClient.initialize().then((version) => {
-            this.registerCommands(context);
-
-            this.registerTestServiceListeners();
-
-            this.discoveryTests();
-        })
-
-        
-
-        /*vscode.workspace.onDidChangeConfiguration(() => {
-            //this.testService.updateConfiguration(getCurrentAdapterName(), getConfigurationForAdatper());
-            this.registerTestModelListeners();
-            this.refrehTestExplorer(null);
-            this.discoveryTests();
-        });*/
-    }
-
-
-
-
     private refrehTestExplorer(test: TestCase) {
         this._onDidChangeTreeData.fire(test);
-    }
-
-
-
-
-
-    private toggleItemCollapsibleState(item: TestTreeType) {
-        /*const treeItemAdditionalInfo: TestAdditionalData = this.testsAdditionalData.getValue(test.getId());
-        if (!treeItemAdditionalInfo) {
-            return;
-        }
-        switch (treeItemAdditionalInfo.collapsibleState) {
-            case vscode.TreeItemCollapsibleState.None:
-                break;
-            case vscode.TreeItemCollapsibleState.Collapsed:
-                treeItemAdditionalInfo.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-                break;
-            case vscode.TreeItemCollapsibleState.Expanded:
-                treeItemAdditionalInfo.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-                break;
-        }
-        */
-
     }
 }

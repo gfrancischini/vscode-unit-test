@@ -80,22 +80,12 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "unit.test.execution.runSelected",
-                    "when": "view == unit.test.explorer.vsTestTree",
-                    "group": "navigation"
-                },
-                {
                     "command": "unit.test.explorer.groupBy",
                     "when": "view == unit.test.explorer.vsTestTree",
                     "group": "navigation"
                 },
                 {
                     "command": "unit.test.execution.runAll",
-                    "when": "view == unit.test.explorer.vsTestTree",
-                    "group": "hidden"
-                },
-                {
-                    "command": "unit.test.execution.debugSelected",
                     "when": "view == unit.test.explorer.vsTestTree",
                     "group": "hidden"
                 }

@@ -18,7 +18,7 @@ import {
  * Class responsible for handling the test communication events 
  */
 export class TestTreeLanguageClient extends TestLanguageClient {
-    private globPattern = "**/*.test.js";
+    private globPattern = "src/**/*.test.js";
 
 
     public testCaseCollection: TestCaseCollection = new TestCaseCollection();
