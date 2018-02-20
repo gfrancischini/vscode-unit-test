@@ -1,11 +1,16 @@
 {
     "name": "vscode-unit-test",
-    "displayName": "vscode-unit-test",
+    "displayName": "Unit Test Explorer",
     "description": "Unit Test IDE for vscode",
-    "version": "0.0.1",
-    "publisher": "gpfrancischini",
+    "version": "0.0.2",
+    "publisher": "gfrancischini",
+    "icon": "resources/icon/testingicon.png",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gfrancischini/vscode-unit-test"
+      },
     "engines": {
-        "vscode": "^1.20.0"
+        "vscode": "^1.18.0"
     },
     "categories": [
         "Other"

@@ -1,6 +1,6 @@
-# WORK IN PROGRESS 
-
 # Visual Studio Code Unit Test Tree View for JS
+
+Download [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=gfrancischini.vscode-unit-test)
 
 ## Sections
 
