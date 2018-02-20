@@ -20,7 +20,6 @@ export class MochaTestFinder {
         
         testCase.setPath(sourceFile.fileName);
         testCase.setTitle(path.basename(sourceFile.fileName));
-        testCase.setParent(null);
         testCase.fullTitle = "";
         testCase.isTestCase = false;
         testCase.id = `${testCase.title}${testCase.path}`
@@ -54,12 +53,14 @@ export class MochaTestFinder {
                         let result: SuiteItem = new SuiteItem();
                         
                         result.setLine(sourceFile.getLineAndCharacterOfPosition(pos).line);
+
                         result.setTitle(MochaTestFinder.visit(sourceFile, obj.arguments[0], null));
+                        const parentTitle = parent != null ? parent.fullTitle : null;
+                        result.fullTitle = parentTitle? parentTitle+" "+result.title : result.title;
                         //result.setChildren(children);
                         result.parendId = parent != null && parent.getId();
                         result.setPath(sourceFile.fileName);
-                        result.setParent(parent);
-                        result.calculateFullTitle();
+
                         result.id = `${result.title}${result.path}`
                         let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result);
                         if (!Array.isArray(children)) {
@@ -80,21 +81,19 @@ export class MochaTestFinder {
 
                         let result: DescribeItem = new DescribeItem();
                         result.setLine(sourceFile.getLineAndCharacterOfPosition(pos).line);
+                        
                         result.setTitle(MochaTestFinder.visit(sourceFile, obj.arguments[0], null));
+                        const parentTitle = parent != null ? parent.fullTitle : null;
+                        result.fullTitle = parentTitle? parentTitle+" "+result.title : result.title;
                         //result.setChildren(children);
                         result.parendId = parent != null && parent.getId();
                         result.setPath(sourceFile.fileName);
-                        result.setParent(parent);
-                        result.calculateFullTitle();
                         result.id = `${result.title}${result.path}`
                         result.isTestCase = false;
                         let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result);
                         if (!Array.isArray(children)) {
                             children = [children];
                         }
-
-                       
-                       
 
                         MochaTestFinder.testCases.push(result);
 
@@ -107,16 +106,14 @@ export class MochaTestFinder {
 
                         let result: ItItem = new ItItem();
                         result.setLine(sourceFile.getLineAndCharacterOfPosition(pos).line);
+
                         result.setTitle(MochaTestFinder.visit(sourceFile, obj.arguments[0], null));
+                        const parentTitle = parent != null ? parent.fullTitle : null;
+                        result.fullTitle = parentTitle? parentTitle+" "+result.title : result.title;
                         result.setPath(sourceFile.fileName);
                         result.parendId = parent != null && parent.getId();
-                        result.setParent(parent);
                         result.id = `${result.title}${result.path}`
-                        result.calculateFullTitle();
 
-
-                       
-                        
                         MochaTestFinder.testCases.push(result);
 
                         return result;
@@ -168,7 +165,7 @@ export class MochaTestFinder {
                 return null;
             }
             default: {
-                console.log("Unresolved node: \'" + ts.SyntaxKind[node.kind] + "\'");
+                //console.log(`Unresolved node: ${ts.SyntaxKind[node.kind]} - File ${sourceFile.fileName}`);
                 return null;
             }
         }

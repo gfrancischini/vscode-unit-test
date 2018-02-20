@@ -19,9 +19,12 @@ function calculateGrep(testCase: TestCase) {
 }
 
 function managedRequire(id: string) {
-    if (path.isAbsolute(id) === false) {
+    if (path.isAbsolute(id) === false && !path.extname) {
         //when the path is not absolute we should try to load it from node_modules folder
         id = path.join(process.cwd(), "node_modules", id);
+    }
+    else if (path.isAbsolute(id) === false) {
+        id = path.join(process.cwd(), id);
     }
     try {
         delete require.cache[id];
@@ -32,7 +35,7 @@ function managedRequire(id: string) {
     }
 }
 
-export function RunMochaProcess(sessionId: number, optsPath: string, testCases: Array<TestCase>, connection, debug = false): Promise<any> {
+export function RunMochaProcess(sessionId: number, optsPath: string, runTestCases: Array<TestCase>, testCases: Array<TestCase>, connection, debug = false): Promise<any> {
     let qtyOfTests: number = 0;
     let currentFilePath: string = null;
 
@@ -109,7 +112,7 @@ export function RunMochaProcess(sessionId: number, optsPath: string, testCases: 
                     mocha.run(callback);
                 } catch (err) {
 
-                    testCases.forEach((testCase) => {
+                    runTestCases.forEach((testCase) => {
                         if (testCase.path === currentFilePath && testCase.sessionId != sessionId) {
                             testCase.isRunning = false;
                             testCase.status = TestCaseStatus.Failed;
@@ -154,21 +157,61 @@ export function RunMochaProcess(sessionId: number, optsPath: string, testCases: 
 
     function createAndRunMocha(): Promise<any> {
         return new Promise<any>(async (resolve, reject) => {
-            for (let testCase of testCases) {
-                let mocha: Mocha = mochaProcess.createMocha(testCase.path, calculateGrep(testCase));
-                let promise = mochaProcess.runMocha(mocha);
+            const dictFileGrep = groupTestByFile(runTestCases);
+            for (let path in dictFileGrep) {
+                const grep = dictFileGrep[path];
+                const mocha: Mocha = mochaProcess.createMocha(path, grep);
+                const promise = mochaProcess.runMocha(mocha);
                 await promise;
             }
+            //for (let testCase of testCases) {
+            //let mocha: Mocha = mochaProcess.createMocha(testCase.path, calculateGrep(testCase));
+            //let promise = mochaProcess.runMocha(mocha);
+            //await promise;
+            // }
             resolve();
         });
     }
 
+    function groupTestByFile(testCases: Array<TestCase>) {
+        const dict = {};
+        testCases.forEach((testCase) => {
+            if (dict[testCase.path] == null) {
+                dict[testCase.path] = "";
+            }
+            dict[testCase.path] = dict[testCase.path] + "|" + calculateGrep(testCase);
+        })
+        return dict;
+    }
 
     function findTestCaseByName(title, path) {
         const filtered = testCases.filter((testCase) => {
             return testCase.title === title && testCase.path === path;
         });
         return filtered != null && filtered[0];
+    }
+
+    function markEveryChildWithParentError(parentTestCase: TestCase) {
+        const filtered = testCases.filter((testCase) => {
+            return testCase.parendId === parentTestCase.id;
+        })
+
+        filtered.forEach((testCase) => {
+            testCase.errorMessage = parentTestCase.errorMessage;
+            testCase.errorStackTrace = parentTestCase.errorStackTrace
+            testCase.startTime = parentTestCase.startTime;
+            testCase.endTime = parentTestCase.endTime;
+            testCase.duration = parentTestCase.duration;
+            testCase.status = parentTestCase.status;
+            testCase.isRunning = parentTestCase.isRunning;
+            testCase.sessionId = parentTestCase.sessionId;
+            
+            connection.testCaseUpdate({
+                testCase
+            });
+
+            markEveryChildWithParentError(testCase);
+        })
     }
 
     /**
@@ -272,15 +315,24 @@ export function RunMochaProcess(sessionId: number, optsPath: string, testCases: 
             .on("fail", (test, err) => {
                 qtyOfFailures++;
                 if (test.type === "hook") {
-                    if (test.parent != null) {
-                        //mochaProcessServer.sendNotifyOnTestHookError(new MochaProcessTestCaseUpdate(
-                        //    suitePath.slice(0, suitePath.length - 1), test.parent.title,
-                        //    currentFilePath, "fail", test.duration, err.message, err.stack));
-                    }
-                    // mochaProcessCallback(new MochaProcessArgumentsCallback("test update",
-                    //    new MochaProcessTestCaseResult(suitePath.slice(0, suitePath.length - 1), 
-                    // test.parent.title, (<any>test.parent).file, "suite fail", err.message, err.stack)));
                     console.log("HOOK ERR= " + err);
+                    if (test.parent != null) {
+                        const testCase: TestCase = findTestCaseByName(test.parent.title, (<any>test.parent).file);
+                        testCase.isRunning = false;
+                        testCase.errorMessage = err.message;
+                        testCase.errorStackTrace = err.stack;
+                        testCase.status = TestCaseStatus.Failed;
+                        testCase.sessionId = sessionId;
+                        testCase.endTime = new Date();
+                        testCase.duration = new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
+
+                        markEveryChildWithParentError(testCase);
+
+                        connection.testCaseUpdate({
+                            testCase
+                        });
+                    }
+                    
                 }
                 else {
                     const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);

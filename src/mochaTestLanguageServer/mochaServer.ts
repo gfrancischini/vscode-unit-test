@@ -11,11 +11,14 @@ import { TestLanguageServer } from "../testLanguage/server/testLanguageServer"
 import { RunMochaProcess } from './mochaRunner'
 import { MochaTestFinder } from "./mochaTestFinder"
 class MochaTestLanguageServer extends TestLanguageServer {
+
+    protected testCases: Array<TestCase>;
+
     public registerListeners() {
         super.registerListeners();
 
         this.connection.onRunTestCases(async (params: RunTestCasesParams) => {
-            await RunMochaProcess(params.sessionId, this.initializeParams.optsPath, params.testCases, this.getConnection(), params.debug).then(() => {
+            await RunMochaProcess(params.sessionId, this.initializeParams.optsPath, params.testCases, this.testCases, this.getConnection(), params.debug).then(() => {
                 return {
                     "test": "ok"
                 }
@@ -23,12 +26,12 @@ class MochaTestLanguageServer extends TestLanguageServer {
         });
 
         this.connection.onDiscoveryTestCases((params: DiscoveryTestCasesParams): DiscoveryTestCasesResult => {
-            const testCases = new Array<TestCase>();
+            this.testCases = new Array<TestCase>();
             params.filePaths.forEach((path) => {
-                testCases.push(...MochaTestFinder.findTestCases(path));
+                this.testCases.push(...MochaTestFinder.findTestCases(path));
             })
             return {
-                testCases
+                testCases : this.testCases
             }
         });
 

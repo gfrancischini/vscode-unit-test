@@ -58,7 +58,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
 
         const initializeParams: InitializeParams = {
             processId: 1,
-            optsPath: getMochaOptsPath()
+            optsPath: path.join(this.directory, getMochaOptsPath())
         }
 
         let version = null;
