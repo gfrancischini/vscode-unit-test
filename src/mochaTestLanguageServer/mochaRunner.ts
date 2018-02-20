@@ -32,7 +32,7 @@ function managedRequire(id: string) {
     }
 }
 
-export function RunMochaProcess(sessionId: number, optsPath: string, testCases: Array<TestCase>, connection): Promise<any> {
+export function RunMochaProcess(sessionId: number, optsPath: string, testCases: Array<TestCase>, connection, debug = false): Promise<any> {
     let qtyOfTests: number = 0;
     let currentFilePath: string = null;
 
@@ -138,14 +138,30 @@ export function RunMochaProcess(sessionId: number, optsPath: string, testCases: 
 
     let mochaProcess: MochaProcess = new MochaProcess(opts);
 
-    return new Promise<any>(async (resolve, reject) => {
-        for (let testCase of testCases) {
-            let mocha: Mocha = mochaProcess.createMocha(testCase.path, calculateGrep(testCase));
-            let promise = mochaProcess.runMocha(mocha);
-            await promise;
-        }
-        resolve();
-    });
+    if (debug) {
+        return new Promise((resolve, reject) => {
+            console.log("Waiting the debug attach");
+            // give debugger some time to properly attach itself before running tests
+            setTimeout(() => {
+                console.log("Running");
+                resolve(createAndRunMocha());
+            }, 5000);
+        });
+    }
+    else {
+        return createAndRunMocha();
+    }
+
+    function createAndRunMocha(): Promise<any> {
+        return new Promise<any>(async (resolve, reject) => {
+            for (let testCase of testCases) {
+                let mocha: Mocha = mochaProcess.createMocha(testCase.path, calculateGrep(testCase));
+                let promise = mochaProcess.runMocha(mocha);
+                await promise;
+            }
+            resolve();
+        });
+    }
 
 
     function findTestCaseByName(title, path) {

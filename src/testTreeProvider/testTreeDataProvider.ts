@@ -275,18 +275,18 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * Run a specific test case item
      * @param item 
      */
-    private runTest(item: TestTreeType) {
+    private runTest(item: TestTreeType, debug : boolean = false) {
         if (item instanceof TreeLabel) {
-            this.testLanguageClient.runTests(item.getChildren());
+            this.testLanguageClient.runTests(item.getChildren(), debug);
         }
         else {
             const testCases = this.testLanguageClient.testCaseCollection.findAllChildrens(item.getId());
             testCases.push(item);
-            this.testLanguageClient.runTests(testCases);
+            this.testLanguageClient.runTests(testCases, debug);
         }
     }
 
-  
+
 
     /**
      * Register test explorer commands
@@ -310,13 +310,14 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         context.subscriptions.push(refreshExplorerCommand);
 
         //register the run selected test command
-        const runCommand = vscode.commands.registerCommand("unit.test.execution.runSelected",
-            (item) => {
-                if (item) {
-                    this.runTest(item);
-                }
-            });
-        context.subscriptions.push(runCommand);
+        const runTestCommand = vscode.commands.registerCommand("unit.test.execution.runSelected",
+            (item) => { item ? this.runTest(item) : null });
+        context.subscriptions.push(runTestCommand);
+
+        //register the run selected test command
+        const debugTestCommand = vscode.commands.registerCommand("unit.test.execution.debugSelected",
+            (item) => { item ? this.runTest(item, true) : null });
+        context.subscriptions.push(debugTestCommand);
 
         //register the show test case result command
         const showTestResultCommand = vscode.commands.registerCommand("unit.test.explorer.openTestResult",

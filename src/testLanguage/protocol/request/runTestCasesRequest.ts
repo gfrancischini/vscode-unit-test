@@ -4,6 +4,7 @@ import { TestCase } from "../testCase"
 export interface RunTestCasesParams {
 	testCases: Array<TestCase>;
 	sessionId : number;
+	debug : boolean;
 }
 
 /**

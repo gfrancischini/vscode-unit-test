@@ -8,12 +8,18 @@ import { startServer } from "../utils/server";
 import { TestCaseCollection } from "./testCaseCollection"
 import { TestLanguageClient } from "../testLanguage/client/testLanguageClient"
 import { StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc';
-import {getMochaGlob, getMochaOptsPath} from "../utils/vsconfig";
+import { getMochaGlob, getMochaOptsPath } from "../utils/vsconfig";
 
 import {
     InitializeParams, InitializeResult,
     TestCaseUpdateParams
 } from "../testLanguage/protocol"
+
+enum DebuggerStatus {
+    Disconnected,
+    Attaching,
+    Attached
+}
 
 /**   
  * Class responsible for handling the test communication events 
@@ -27,6 +33,8 @@ export class TestTreeLanguageClient extends TestLanguageClient {
     public sessionId: number = 0;
 
     private directory: string = null;
+
+    private debuggerStatus: DebuggerStatus = DebuggerStatus.Disconnected;
 
     /**
      * Create the test result output channel
@@ -50,7 +58,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
 
         const initializeParams: InitializeParams = {
             processId: 1,
-            optsPath : getMochaOptsPath()
+            optsPath: getMochaOptsPath()
         }
 
         let version = null;
@@ -129,24 +137,68 @@ export class TestTreeLanguageClient extends TestLanguageClient {
      */
     public runTests(testCases: Array<TestCase>, debuggingEnabled: boolean = false) {
         this.sessionId++;
-        this.testOutputChannel.appendLine(`Run tests for sessionId: ${this.sessionId}`);
+        if (debuggingEnabled) {
+            this.testOutputChannel.appendLine(`Debug tests for sessionId: ${this.sessionId}`);
+        }
+        else {
+            this.testOutputChannel.appendLine(`Run tests for sessionId: ${this.sessionId}`);
+        }
+
         this.testOutputChannel.show();
         vscode.window.withProgress(
             { location: vscode.ProgressLocation.Window, title: "Test Adapter" },
             progress => {
                 progress.report({ message: `Running Tests` });
                 return new Promise((resolve, reject) => {
-                    this.connection.runTestCases({
-                        sessionId: this.sessionId,
-                        testCases
-                    }).then((result: RunTestCasesResult) => {
-                        this.testOutputChannel.appendLine("End of test running");
-                        return resolve(null);
-                    });
+                    this.attachDebugToTestCases(debuggingEnabled).then(result => {
+                        this.connection.runTestCases({
+                            sessionId: this.sessionId,
+                            testCases,
+                            debug: debuggingEnabled
+                        }).then((result: RunTestCasesResult) => {
+                            this.testOutputChannel.appendLine("End of test running");
+                            vscode.commands.executeCommand("workbench.action.debug.stop");
+                            return resolve(null);
+                        });
+                    })
+
+
                 });
             });
     }
 
+    public attachDebugToTestCases(debuggingEnabled: boolean): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            if (debuggingEnabled === false || this.debuggerStatus === DebuggerStatus.Attached) {
+                resolve(true);
+            }
+            else if (this.debuggerStatus === DebuggerStatus.Disconnected) {
+                this.debuggerStatus = DebuggerStatus.Attaching;
+                //todo: this options should be loaded from a file contributed by the extension
+                let vscodeDebuggerOpts = {
+                    "name": "Mocha Tests",
+                    "type": "node",
+                    "request": "launch",
+                    "stopOnEntry": false,
+                    "address": "localhost",
+                    "port": 9220,
+                    "runtimeExecutable": null
+                };
+
+                vscode.debug.startDebugging(undefined, vscodeDebuggerOpts).then(data => {
+                    console.log(`debug status:${data}`);
+                    this.debuggerStatus = DebuggerStatus.Attached;
+                    resolve(true);
+
+                });
+
+                vscode.debug.onDidTerminateDebugSession(() => {
+                    this.debuggerStatus = DebuggerStatus.Disconnected;
+                    resolve(false);
+                });
+            }
+        });
+    }
 
     /**
      * vent notification emitted when test case change (new test, update)

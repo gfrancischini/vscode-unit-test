@@ -9,11 +9,14 @@ export function startServer(cwd: string) {
     const forkArgs: Array<any> = [];
     const spawnArgs = [];
 
+    //uncoment this line for process debug
+    //spawnArgs.push("--inspect-brk=127.0.0.1:9220");
+
+    //this line is used for allowing test debug
+    spawnArgs.push("--inspect=127.0.0.1:9220");
+
     //add the module file path as a arg
     spawnArgs.push(modulePath);
-
-    //uncoment this line for process debug
-    spawnArgs.push("--inspect-brk=127.0.0.1:9220");
 
     const childProcess = cp.spawn("node", spawnArgs, { cwd: cwd, stdio: ["pipe", "pipe", "pipe", "ipc"] });
 
