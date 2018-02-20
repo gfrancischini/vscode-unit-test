@@ -259,16 +259,11 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * Command for run all test cases
      */
     private onCommandRunAllTests() {
-        /*const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
+        const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
             return testCase.parendId == null;
         })
-        filtered.forEach((testCase) => {
-
-        })
-        const testCases = this.testLanguageClient.testCaseCollection.findAllChildrens(item.getId());
-            testCases.push(item);
-        this.testLanguageClient.runTests(filtered);*/
-        //not implemented yet
+        
+        this.testLanguageClient.runTests(filtered);
     }
 
     /**

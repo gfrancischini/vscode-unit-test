@@ -84,7 +84,7 @@
                 },
                 {
                     "command": "unit.test.execution.runAll",
-                    "when": "view == unit.test.explorer.vsTestTree1",
+                    "when": "view == unit.test.explorer.vsTestTree",
                     "group": "hidden"
                 }
             ],

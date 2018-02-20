@@ -11,8 +11,8 @@ import { TestLanguageServer } from "../testLanguage/server/testLanguageServer"
 import { RunMochaProcess } from './mochaRunner'
 import { MochaTestFinder } from "./mochaTestFinder"
 class MochaTestLanguageServer extends TestLanguageServer {
-
-    protected testCases: Array<TestCase>;
+    //TODO implement a way to join test cases everytime we run the on discovery
+    protected testCases: Array<TestCase> = new Array<TestCase>();
 
     public registerListeners() {
         super.registerListeners();
@@ -26,7 +26,6 @@ class MochaTestLanguageServer extends TestLanguageServer {
         });
 
         this.connection.onDiscoveryTestCases((params: DiscoveryTestCasesParams): DiscoveryTestCasesResult => {
-            this.testCases = new Array<TestCase>();
             params.filePaths.forEach((path) => {
                 this.testCases.push(...MochaTestFinder.findTestCases(path));
             })

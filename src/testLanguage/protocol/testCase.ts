@@ -17,9 +17,13 @@ export enum TestCaseStatus {
     NotFound = 0x4,
 }
 
+let uniqueId = 0;
+
 export class TestCase {
 
-    public id: string;
+    public code: string;
+
+    public id:string;
 
     /**
      * The file path that this test belong.
@@ -61,7 +65,7 @@ export class TestCase {
      */
     public fullTitle: string;
 
-    public parendId = null;
+    public parendId : string = null;
 
     public isTestCase: boolean = true;
 
@@ -107,12 +111,16 @@ export class TestCase {
 
     constructor() {
         this.status = TestCaseStatus.None;
+        this.id = (uniqueId++).toString();
     }
 
-    public getId(): string {
-        return this.id
+    public getCode(): string {
+        return this.code;
     }
 
+    public getId() : string {
+        return this.id;
+    }
 
     setPath(path: string): void {
         this.path = PathUtils.normalizePath(path);

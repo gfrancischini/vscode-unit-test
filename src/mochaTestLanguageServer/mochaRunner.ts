@@ -177,9 +177,11 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
         const dict = {};
         testCases.forEach((testCase) => {
             if (dict[testCase.path] == null) {
-                dict[testCase.path] = "";
+                dict[testCase.path] = calculateGrep(testCase);
             }
-            dict[testCase.path] = dict[testCase.path] + "|" + calculateGrep(testCase);
+            else {
+                dict[testCase.path] = dict[testCase.path] + "|" + calculateGrep(testCase);
+            }
         })
         return dict;
     }
@@ -205,7 +207,7 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
             testCase.status = parentTestCase.status;
             testCase.isRunning = parentTestCase.isRunning;
             testCase.sessionId = parentTestCase.sessionId;
-            
+
             connection.testCaseUpdate({
                 testCase
             });
@@ -351,8 +353,15 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
             })
             .on("pending", (test) => {
                 qtyOfSkip++;
-                //mochaProcessServer.sendNotifyOnTestCaseEnd(new MochaProcessTestCaseUpdate(suitePath, test.title,
-                //   (<any>test).file, "pending", test.duration));
+                const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);
+                    testCase.isRunning = false;
+                    testCase.status = TestCaseStatus.Skipped;
+                    testCase.endTime = new Date();
+                    testCase.duration = new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
+
+                    connection.testCaseUpdate({
+                        testCase
+                    });
             })
             .on("end", () => {
                 const testCase: TestCase = findTestCaseByName(path.basename(currentFilePath), currentFilePath);

@@ -7,7 +7,7 @@ export class GroupByFile extends GroupBy {
     static TYPE: string = "GroupByFile";
 
     constructor() {
-        super(GroupByFile.TYPE, "File", "Groups tests by file results: Failed Tests, Skipped Tests, Passed Tests.");
+        super(GroupByFile.TYPE, "File", "Groups tests by file path.");
     }
 
     /**
