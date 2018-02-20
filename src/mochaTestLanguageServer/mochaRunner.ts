@@ -8,65 +8,65 @@ import { TestCase, TestCaseStatus } from "../testLanguage/protocol";
 import * as path from "path";
 import { escapeRegex } from "../utils/string"
 import { IConnection, TestLanguageServer } from "../testLanguage/server/testLanguageServer"
-
+import { getOptions } from "./mochaOptionsReader"
 
 function calculateGrep(testCase: TestCase) {
     if (testCase.parendId == null) {
         //when there is no parentId we are sending the entire file to test
         return null;
     }
-
-    //if (testCase.children != null) {
-    /*testCase.getChildren().forEach((childreTestCase : TestCase) => {
-        childreTestCase.getFullTitle();
-    })*/
-
-    //      const grep = testCase.children.map(childrenTestCase => this.calculateGrep(childrenTestCase)).join("|");
-    //      return grep;
-    //testCase.getChildren()
-
-    //return  testCase.getFullTitle() + "|"
-    //}
     return escapeRegex(testCase.fullTitle);
-
-    //grep += '^(' + this.selectors.map(o => escapeRegExp(o)).join('|') + ')$';
 }
 
-
-/*class MochaRunner {
-    protected connection : IConnection;
-    constructor(connection : IConnection) {
-        this.connection = connection;
-        this.registerListeners();
+function managedRequire(id: string) {
+    if (path.isAbsolute(id) === false) {
+        //when the path is not absolute we should try to load it from node_modules folder
+        id = path.join(process.cwd(), "node_modules", id);
     }
-
-    private registerListeners() {
-        this.connection.onRunTestCases((params: RunTestCasesParams) : RunTestCasesResult => {
-            for (let testCase of params.testCases) {
-
-                RunMochaProcess(params.sessionId, params.testCases, testCase.path, calculateGrep(testCase));
-
-                //let mochaProcess: MochaProcess = new MochaProcess();
-                //let mocha: Mocha = mochaProcess.createMocha(testCase.path, calculateGrep(testCase));
-                //let promise = mochaProcess.runMocha(mocha);
-            }
-        });
+    try {
+        delete require.cache[id];
+        require(id);
     }
-}*/
-
-/*class ReportsCustom {
-    constructor(runner: Mocha.IRunner, options: any) {
+    catch (err) {
+        console.log(`managedRequire(${id}) - ${err}`);
     }
-}*/
+}
 
-
-export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, connection): Promise<any> {
+export function RunMochaProcess(sessionId: number, optsPath: string, testCases: Array<TestCase>, connection): Promise<any> {
     let qtyOfTests: number = 0;
     let currentFilePath: string = null;
 
     class MochaProcess {
         private filePath: string;
         private grep: string;
+        private opts;
+
+        constructor(opts: Array<{}>) {
+            this.opts = opts;
+        }
+
+        private applyMochaOpts(mocha: Mocha) {
+            if (this.opts == null) {
+                return;
+            }
+
+            console.log("Options: " + JSON.stringify(this.opts));
+
+            this.opts.forEach(option => {
+                switch (option.key) {
+                    case "--require":
+                        managedRequire(option.value);
+                        break;
+                    case "--ui":
+                        mocha.ui(option.value);
+                        break;
+                    case "--timeout":
+                        mocha.timeout(option.value);
+                        break;
+                }
+            });
+
+        }
 
         public createMocha(filePath: string, grep: string): Mocha {
             this.filePath = filePath;
@@ -76,6 +76,8 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
             const Mocha: any = require("mocha");
             const mocha: Mocha = new Mocha({ ui: "bdd", timeout: 999999 });
             mocha.ui("bdd");
+
+            this.applyMochaOpts(mocha);
 
             // require nodejs ts source map support
             //require("source-map-support/register");
@@ -131,7 +133,10 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
         }
     }
 
-    let mochaProcess: MochaProcess = new MochaProcess();
+
+    const opts = optsPath ? getOptions(optsPath) : null;
+
+    let mochaProcess: MochaProcess = new MochaProcess(opts);
 
     return new Promise<any>(async (resolve, reject) => {
         for (let testCase of testCases) {
@@ -142,7 +147,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
         resolve();
     });
 
-    
+
     function findTestCaseByName(title, path) {
         const filtered = testCases.filter((testCase) => {
             return testCase.title === title && testCase.path === path;
@@ -168,9 +173,6 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
         runner
             .on("start", start => {
                 console.log(`Start running test source ${currentFilePath}`);
-                //mochaProcessServer.sendNotifyOnTestFrameworkStart(new MochaTestFrameworkDetail(total));
-                //mochaProcessServer.sendNotifyOnTestFileStart(new MochaProcessTestCaseUpdate(
-                //    suitePath, "", currentFilePath, "file start", 0));
 
                 const testCase: TestCase = findTestCaseByName(path.basename(currentFilePath), currentFilePath);
                 if (testCase) {
@@ -189,8 +191,8 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
                 if (!suite.title) {
                     return;
                 }
-                
-                console.log(`${"\t".repeat(suitePath.length+1)}Start running test suite ${suite.title}`);
+
+                console.log(`${"\t".repeat(suitePath.length + 1)}Start running test suite ${suite.title}`);
 
                 const testCase: TestCase = findTestCaseByName(suite.title, (<any>suite).file);
                 if (testCase) {
@@ -216,7 +218,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
                 if (testCase) {
                     testCase.isRunning = false;
                     testCase.endTime = new Date();
-                    testCase.duration =  new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
+                    testCase.duration = new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
 
                     if (qtyOfFailures > 0) {
 
@@ -244,7 +246,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
                 testCase.isRunning = false;
                 testCase.status = TestCaseStatus.Passed;
                 testCase.endTime = new Date();
-                testCase.duration =  new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
+                testCase.duration = new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
 
                 connection.testCaseUpdate({
                     testCase
@@ -271,7 +273,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
                     testCase.errorStackTrace = err.stack;
                     testCase.status = TestCaseStatus.Failed;
                     testCase.endTime = new Date();
-                    testCase.duration =  new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
+                    testCase.duration = new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
 
                     connection.testCaseUpdate({
                         testCase
@@ -289,7 +291,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
                 if (testCase) {
                     testCase.isRunning = false;
                     testCase.endTime = new Date();
-                    testCase.duration =  new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
+                    testCase.duration = new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
 
                     if (qtyOfFailures > 0) {
 
@@ -312,7 +314,7 @@ export function RunMochaProcess(sessionId: number, testCases: Array<TestCase>, c
 
             })
             .on("test", (test: Mocha.ITest) => {
-                console.log(`${"\t".repeat(suitePath.length+2)}Start running test ${test.title}`);
+                console.log(`${"\t".repeat(suitePath.length + 2)}Start running test ${test.title}`);
                 const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);
 
                 testCase.isRunning = true;

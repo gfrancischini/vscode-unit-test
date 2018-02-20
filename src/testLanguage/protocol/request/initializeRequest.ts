@@ -14,7 +14,12 @@ export interface InitializeParams {
 	 *
 	 * @deprecated in favour of rootUri.
 	 */
-    rootPath?: string | null;
+	rootPath?: string | null;
+	
+	/**
+	 * Custom initialization arguments request.
+	 */
+	[custom: string]: any;
 	
 	/**
 	 * The initial trace setting. If omitted trace is disabled ('off').

@@ -15,7 +15,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
         super.registerListeners();
 
         this.connection.onRunTestCases(async (params: RunTestCasesParams) => {
-            await RunMochaProcess(params.sessionId, params.testCases, this.getConnection()).then(() => {
+            await RunMochaProcess(params.sessionId, this.initializeParams.optsPath, params.testCases, this.getConnection()).then(() => {
                 return {
                     "test": "ok"
                 }

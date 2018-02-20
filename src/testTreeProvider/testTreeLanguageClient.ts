@@ -8,6 +8,7 @@ import { startServer } from "../utils/server";
 import { TestCaseCollection } from "./testCaseCollection"
 import { TestLanguageClient } from "../testLanguage/client/testLanguageClient"
 import { StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc';
+import {getMochaGlob, getMochaOptsPath} from "../utils/vsconfig";
 
 import {
     InitializeParams, InitializeResult,
@@ -34,10 +35,10 @@ export class TestTreeLanguageClient extends TestLanguageClient {
 
     constructor(directory: string) {
         super();
+        this.globPattern = getMochaGlob();
         this.directory = directory;
         this._onDidTestCaseChanged = new Emitter<TestCase>();
         this.watchForWorkspaceFilesChange();
-
     }
 
 
@@ -48,7 +49,8 @@ export class TestTreeLanguageClient extends TestLanguageClient {
             new StreamMessageWriter(childProcess.stdin));
 
         const initializeParams: InitializeParams = {
-            processId: 1
+            processId: 1,
+            optsPath : getMochaOptsPath()
         }
 
         let version = null;

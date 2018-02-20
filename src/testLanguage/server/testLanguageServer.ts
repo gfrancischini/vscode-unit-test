@@ -20,6 +20,7 @@ export interface IConnection {
 
 export class TestLanguageServer {
     protected connection: IConnection;
+    protected initializeParams : InitializeParams;
 
     public getConnection(): IConnection {
         return this.connection;
@@ -42,6 +43,7 @@ export class TestLanguageServer {
 
     public registerListeners() {
         this.connection.onInitialize((params: InitializeParams): InitializeResult => {
+            this.initializeParams = params;
             return {
                 success: true,
                 version: "0.0.1",

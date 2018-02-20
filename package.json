@@ -27,14 +27,6 @@
                 "icon": "resources/light/play_all_button.svg"
             },
             {
-                "command": "unit.test.execution.debugSelected",
-                "title": "Debug Selected Test"
-            },
-            {
-                "command": "unit.test.execution.debugAll",
-                "title": "Debug All Tests"
-            },
-            {
                 "command": "unit.test.execution.stop",
                 "title": "Stop Tests"
             },
@@ -45,10 +37,6 @@
             {
                 "command": "unit.test.explorer.openTestResult",
                 "title": "Open Selected Test Result"
-            },
-            {
-                "command": "unit.test.explorer.restart",
-                "title": "Restart Test Explorer"
             },
             {
                 "command": "unit.test.explorer.refresh",
@@ -98,6 +86,22 @@
                     "command": "unit.test.explorer.open"
                 }
             ]
+        },
+        "configuration": {
+            "type": "object",
+            "title": "Unit Test Configuration",
+            "properties": {
+                "mocha.glob": {
+                    "type": "string",
+                    "default": "src/**/*.test.js",
+                    "description": "Mocha Glob pattern used to find test files"
+                },
+                "mocha.opts": {
+                    "type": "string",
+                    "default": "mocha.opts",
+                    "description": "Mocha Opts Path Relative path to the workspace"
+                }
+            }
         }
     },
     "scripts": {
