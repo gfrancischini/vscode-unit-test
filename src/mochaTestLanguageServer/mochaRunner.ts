@@ -31,7 +31,7 @@ function managedRequire(id: string) {
         require(id);
     }
     catch (err) {
-        console.log(`managedRequire(${id}) - ${err}`);
+        //console.log(`managedRequire(${id}) - ${err}`);
     }
 }
 
@@ -53,7 +53,7 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
                 return;
             }
 
-            console.log("Options: " + JSON.stringify(this.opts));
+            //console.log("Options: " + JSON.stringify(this.opts));
 
             this.opts.forEach(option => {
                 switch (option.key) {
@@ -112,7 +112,7 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
                     mocha.run(callback);
                 } catch (err) {
 
-                    runTestCases.forEach((testCase) => {
+                    testCases.forEach((testCase) => {
                         if (testCase.path === currentFilePath && testCase.sessionId != sessionId) {
                             testCase.isRunning = false;
                             testCase.status = TestCaseStatus.Failed;
@@ -130,7 +130,7 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
 
                     resolve();
 
-                    console.log("err: ");
+                    console.log("err: " + err);
                 }
             });
         }
@@ -186,9 +186,9 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
         return dict;
     }
 
-    function findTestCaseByName(title, path) {
+    function findTestCaseByName(fullTitle, path) {
         const filtered = testCases.filter((testCase) => {
-            return testCase.title === title && testCase.path === path;
+            return testCase.fullTitle === fullTitle && testCase.path === path;
         });
         return filtered != null && filtered[0];
     }
@@ -216,6 +216,13 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
         })
     }
 
+    function getFullTitle(item : {title, parent}) : string {
+        if(item.parent != null && item.parent.title) {
+            return getFullTitle(item.parent) + " " + item.title;
+        }
+        return item.title;
+    }
+
     /**
      * Create a custom mocha test reporter
      * @param runner The runner
@@ -235,7 +242,7 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
             .on("start", start => {
                 console.log(`Start running test source ${currentFilePath}`);
 
-                const testCase: TestCase = findTestCaseByName(path.basename(currentFilePath), currentFilePath);
+                const testCase: TestCase = findTestCaseByName("", currentFilePath);
                 if (testCase) {
                     testCase.isRunning = true;
                     testCase.sessionId = sessionId;
@@ -255,7 +262,8 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
 
                 console.log(`${"\t".repeat(suitePath.length + 1)}Start running test suite ${suite.title}`);
 
-                const testCase: TestCase = findTestCaseByName(suite.title, (<any>suite).file);
+                const fullTitle = getFullTitle(suite);
+                const testCase: TestCase = findTestCaseByName(fullTitle, (<any>suite).file);
                 if (testCase) {
                     testCase.isRunning = true;
                     testCase.sessionId = sessionId;
@@ -275,7 +283,8 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
                 }
                 suitePath.pop();
 
-                const testCase: TestCase = findTestCaseByName(suite.title, (<any>suite).file);
+                const fullTitle = getFullTitle(suite);
+                const testCase: TestCase = findTestCaseByName(fullTitle, (<any>suite).file);
                 if (testCase) {
                     testCase.isRunning = false;
                     testCase.endTime = new Date();
@@ -303,7 +312,8 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
             })
             .on("pass", (test) => {
                 qtyOfSuccess++;
-                const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);
+                const fullTitle = getFullTitle(test);
+                const testCase: TestCase = findTestCaseByName(fullTitle, (<any>test).file);
                 testCase.isRunning = false;
                 testCase.status = TestCaseStatus.Passed;
                 testCase.endTime = new Date();
@@ -317,9 +327,9 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
             .on("fail", (test, err) => {
                 qtyOfFailures++;
                 if (test.type === "hook") {
-                    console.log("HOOK ERR= " + err);
                     if (test.parent != null) {
-                        const testCase: TestCase = findTestCaseByName(test.parent.title, (<any>test.parent).file);
+                        const fullTitle = getFullTitle(test.parent);
+                        const testCase: TestCase = findTestCaseByName(fullTitle, (<any>test.parent).file);
                         testCase.isRunning = false;
                         testCase.errorMessage = err.message;
                         testCase.errorStackTrace = err.stack;
@@ -337,7 +347,8 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
                     
                 }
                 else {
-                    const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);
+                    const fullTitle = getFullTitle(test);
+                    const testCase: TestCase = findTestCaseByName(fullTitle, (<any>test).file);
                     testCase.isRunning = false;
                     testCase.errorMessage = err.message;
                     testCase.errorStackTrace = err.stack;
@@ -353,9 +364,12 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
             })
             .on("pending", (test) => {
                 qtyOfSkip++;
-                const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);
+                const fullTitle = getFullTitle(test);
+                const testCase: TestCase = findTestCaseByName(fullTitle, (<any>test).file);
                     testCase.isRunning = false;
                     testCase.status = TestCaseStatus.Skipped;
+                    testCase.sessionId = sessionId;
+                    testCase.startTime = new Date();
                     testCase.endTime = new Date();
                     testCase.duration = new Date(testCase.endTime).getTime() - new Date(testCase.startTime).getTime();
 
@@ -364,7 +378,7 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
                     });
             })
             .on("end", () => {
-                const testCase: TestCase = findTestCaseByName(path.basename(currentFilePath), currentFilePath);
+                const testCase: TestCase = findTestCaseByName("", currentFilePath);
                 if (testCase) {
                     testCase.isRunning = false;
                     testCase.endTime = new Date();
@@ -392,7 +406,8 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
             })
             .on("test", (test: Mocha.ITest) => {
                 console.log(`${"\t".repeat(suitePath.length + 2)}Start running test ${test.title}`);
-                const testCase: TestCase = findTestCaseByName(test.title, (<any>test).file);
+                const fullTitle = getFullTitle(test);
+                const testCase: TestCase = findTestCaseByName(fullTitle, (<any>test).file);
 
                 testCase.isRunning = true;
                 testCase.sessionId = sessionId;

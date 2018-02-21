@@ -10,12 +10,13 @@ export class TreeLabel {
 
     private outcome: TestCaseStatus;
 
-
+    public id : string;
 
     constructor(displayName: string, outcome: TestCaseStatus, tests: Array<TestCase> = null) {
         this.title = displayName;
         this.children = tests;
         this.outcome = outcome;
+        this.id = null;//displayName + outcome.toString();
     }
 
     public getChildrenLenght(): number {

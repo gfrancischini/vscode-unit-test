@@ -7,6 +7,7 @@ import { getImageResource } from "../utils/image"
 import { TestTreeLanguageClient } from "./testTreeLanguageClient"
 import * as Collections from "typescript-collections";
 import { TestTreeType } from "./treeType"
+import * as throttle from "lodash.throttle"
 
 /**
  * Register the test tree explorer
@@ -46,11 +47,6 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * Group by filter provider that categorizes the test cases
      */
     private groupByFilter: GroupByProvider = new GroupByProvider();
-
-    /**
-     * Additional test data related to handling the tree view
-     */
-    private testsAdditionalData: Collections.Dictionary<string, TestAdditionalData> = new Collections.Dictionary<string, TestAdditionalData>();
 
     /**
      * Current test tree status
@@ -121,7 +117,8 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
                 arguments: [item],
                 title: item.title,
             },
-            iconPath: this.getIcon(item)
+            iconPath: this.getIcon(item),
+            id: item.id
         };
     }
 
@@ -178,18 +175,11 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * @param item 
      */
     private getItemCollapsibleState(item: TestTreeType) {
-        const treeItemAdditionalInfo: TestAdditionalData = this.testsAdditionalData.getValue(item.getId());
-        if (treeItemAdditionalInfo) {
-            return treeItemAdditionalInfo.collapsibleState;
-        }
-
         if (item instanceof TreeLabel) {
             return vscode.TreeItemCollapsibleState.Expanded;
         }
 
-        const hasChildren: boolean = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().some((testCase) => {
-            return testCase.parendId === item.getId();
-        });
+        const hasChildren = item.hasChildren;
 
         return hasChildren ? vscode.TreeItemCollapsibleState.Collapsed : null;
     }
@@ -232,7 +222,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      */
     private registerTestServiceListeners() {
         this.testLanguageClient.onDidTestCaseChanged((test: TestCase) => {
-            this._onDidChangeTreeData.fire();
+            this._onDidChangeTreeData.fire(test);
         });
     }
 
@@ -262,7 +252,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
             return testCase.parendId == null;
         })
-        
+
         this.testLanguageClient.runTests(filtered);
     }
 
@@ -270,7 +260,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * Run a specific test case item
      * @param item 
      */
-    private runTest(item: TestTreeType, debug : boolean = false) {
+    private runTest(item: TestTreeType, debug: boolean = false) {
         if (item instanceof TreeLabel) {
             this.testLanguageClient.runTests(item.getChildren(), debug);
         }
@@ -280,8 +270,6 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             this.testLanguageClient.runTests(testCases, debug);
         }
     }
-
-
 
     /**
      * Register test explorer commands
@@ -350,6 +338,10 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         }
     }
 
+    /**
+     * Refresh the test explorer node
+     * @param test 
+     */
     private refrehTestExplorer(test: TestCase) {
         this._onDidChangeTreeData.fire(test);
     }

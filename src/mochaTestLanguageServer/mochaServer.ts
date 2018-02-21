@@ -26,11 +26,16 @@ class MochaTestLanguageServer extends TestLanguageServer {
         });
 
         this.connection.onDiscoveryTestCases((params: DiscoveryTestCasesParams): DiscoveryTestCasesResult => {
+            const discoveryTestCases = new Array<TestCase>();
             params.filePaths.forEach((path) => {
-                this.testCases.push(...MochaTestFinder.findTestCases(path));
+                discoveryTestCases.push(...MochaTestFinder.findTestCases(path));
+                this.testCases.push(...discoveryTestCases);
             })
+
+            findDuplicatesTestCases(discoveryTestCases);
+
             return {
-                testCases : this.testCases
+                testCases: discoveryTestCases
             }
         });
 
@@ -48,3 +53,31 @@ mochaLanguageServer.listen(new StreamMessageReader(process.stdin),
 console.log = function (data: string) {
     mochaLanguageServer.getConnection().dataOutput({ data });
 };
+
+/**
+ * Find all duplicate test cases and log the information
+ * @param testCases
+ */
+function findDuplicatesTestCases(testCases : Array<TestCase>) {
+    const fullTitles = testCases.map((testCase) => {return testCase.fullTitle});
+
+    const count = fullTitles =>
+    fullTitles.reduce((a, b) =>
+            Object.assign(a, { [b]: (a[b] || 0) + 1 }), {})
+
+    const duplicates = dict =>
+        Object.keys(dict).filter((a) => dict[a] > 1)
+
+    const foundDuplicates = duplicates(count(fullTitles));
+
+    foundDuplicates.forEach((fullTitle) => {
+        const filtered = testCases.filter((testCase) => {
+            return testCase.fullTitle === fullTitle;
+        })
+        filtered.forEach((testCase) => {
+            console.log(`Duplicated test ${testCase.fullTitle} - Source ${testCase.path}:${testCase.line}`);
+        });
+    });
+    //console.log(count(names)) // { Mike: 1, Matt: 1, Nancy: 2, Adam: 1, Jenny: 1, Carl: 1 }
+    //console.log() // [ 'Nancy' ]
+}

@@ -22,8 +22,8 @@ export class MochaTestFinder {
         testCase.setTitle(path.basename(sourceFile.fileName));
         testCase.fullTitle = "";
         testCase.isTestCase = false;
-        testCase.id = `${testCase.title}${testCase.path}`
-
+        testCase.code = `${testCase.title}${testCase.path}`
+        testCase.hasChildren = true;
         let testCases = new Array<TestCase>();
         testCases.push(testCase);
 
@@ -72,7 +72,7 @@ export class MochaTestFinder {
                             children = [children];
                         }
                         result.isTestCase = false;
-
+                        result.hasChildren = children.length > 0;
 
                         testCases.push(result);
 
@@ -100,6 +100,9 @@ export class MochaTestFinder {
                             children = [children];
                         }
 
+                        result.hasChildren = children.length > 0;
+                        
+
                         testCases.push(result);
 
                         return result;
@@ -118,7 +121,7 @@ export class MochaTestFinder {
                         result.setPath(sourceFile.fileName);
                         result.parendId = parent != null && parent.getId();
                         result.code = `${result.title}${result.path}`
-
+                        result.hasChildren = false;
                         testCases.push(result);
 
                         return result;

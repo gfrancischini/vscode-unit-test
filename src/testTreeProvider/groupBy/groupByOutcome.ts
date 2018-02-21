@@ -38,6 +38,19 @@ export class GroupByOutcome extends GroupBy {
     }
 
     /**
+    * Return a array list of all skipped tests
+    */
+   public getSkippedTests(testCases: Array<TestCase>): Array<TestCase> {
+    const tests = testCases.filter((test: TestCase) => {
+        if (test.isTestCase && test.status === TestCaseStatus.Skipped) {
+            return true;
+        }
+        return false
+    });
+    return tests;
+}
+
+    /**
      * Return a promise of Array<TestTreeType> that has all the test classified by a certain logic.
      * Group the test by status (Not Run, Failed, Success)
      * @param testCases The available test cases
@@ -48,6 +61,7 @@ export class GroupByOutcome extends GroupBy {
 
             const failedTestsLabel: TreeLabel = new TreeLabel("Failed Tests", TestCaseStatus.Failed, this.getFailedTests(testCases));
             const passedTests: TreeLabel = new TreeLabel("Passed Tests", TestCaseStatus.Passed, this.getPassedTests(testCases));
+            const skippedTests: TreeLabel = new TreeLabel("Skipped Tests", TestCaseStatus.Skipped, this.getSkippedTests(testCases));
             const notRunTestsLabel: TreeLabel = new TreeLabel("Not Run Tests", TestCaseStatus.None, this.getNotRunTests(testCases));
 
             // only add filters if there is children to display
@@ -56,6 +70,9 @@ export class GroupByOutcome extends GroupBy {
             }
             if (passedTests.getChildrenLenght() > 0) {
                 outcomeArray.push(passedTests);
+            }
+            if (skippedTests.getChildrenLenght() > 0) {
+                outcomeArray.push(skippedTests);
             }
             if (notRunTestsLabel.getChildrenLenght() > 0) {
                 outcomeArray.push(notRunTestsLabel);

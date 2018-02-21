@@ -9,6 +9,7 @@ import { TestCaseCollection } from "./testCaseCollection"
 import { TestLanguageClient } from "../testLanguage/client/testLanguageClient"
 import { StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc';
 import { getMochaGlob, getMochaOptsPath } from "../utils/vsconfig";
+var throttle = require('throttle-debounce/throttle');
 
 import {
     InitializeParams, InitializeResult,
@@ -72,12 +73,18 @@ export class TestTreeLanguageClient extends TestLanguageClient {
     registerListeners() {
         super.registerListeners();
 
+        const throttled = throttle(300, () => {
+            // Throttled function 
+            this._onDidTestCaseChanged.fire();
+        });
+
         this.connection.onTestCaseUpdated((params: TestCaseUpdateParams): any => {
             let testCase: TestCase = Object.assign(new TestCase(), params.testCase);
 
             this.testCaseCollection.push(testCase);
 
-            this._onDidTestCaseChanged.fire(testCase);
+            throttled();
+
         });
 
         this.connection.onDataOutput((params: DataOutputParams): any => {
@@ -109,7 +116,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
                 const testFilesPath = getAllTestFilesInDirectory(directory, this.globPattern);
 
                 testFilesPath.forEach((testFilePath, i) => {
-                    const message = `Discovering Tests: ${i}/${testFilesPath.length}`;
+                    const message = `Discovering Tests: ${i + 1}/${testFilesPath.length}`;
                     progress.report({ message });
                     this.testOutputChannel.appendLine(`${message} - ${testFilePath}`);
                     this.connection.discoveryTestCases({
@@ -119,6 +126,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
                             let convertedTestCase: TestCase = Object.assign(new TestCase(), testCase);
                             this.testCaseCollection.push(convertedTestCase);
                         });
+                        this._onDidTestCaseChanged.fire(result.testCases[0]);
                     });
                 });
 
@@ -156,6 +164,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
                             testCases,
                             debug: debuggingEnabled
                         }).then((result: RunTestCasesResult) => {
+                            this._onDidTestCaseChanged.fire();
                             this.testOutputChannel.appendLine("End of test running");
                             vscode.commands.executeCommand("workbench.action.debug.stop");
                             return resolve(null);

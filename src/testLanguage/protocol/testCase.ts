@@ -71,6 +71,8 @@ export class TestCase {
 
     public isRunning: boolean = false;
 
+    public hasChildren : boolean = false;
+
     /**
      * TestResult.ErrorMessage provides an error message if the test failed.
      */
