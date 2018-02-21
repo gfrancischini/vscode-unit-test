@@ -7,7 +7,6 @@ import { getImageResource } from "../utils/image"
 import { TestTreeLanguageClient } from "./testTreeLanguageClient"
 import * as Collections from "typescript-collections";
 import { TestTreeType } from "./treeType"
-import * as throttle from "lodash.throttle"
 
 /**
  * Register the test tree explorer

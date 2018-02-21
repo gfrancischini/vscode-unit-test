@@ -71,6 +71,20 @@ Calling out known issues can help limit users opening duplicate issues against y
 
 Users appreciate release notes as you update your extension.
 
+### 0.0.4 AND 0.0.3
+
+Release bug fixes (package missing)
+
+### 0.0.2
+
+Add missing skipped tests to the outcome group by view 
+Perfomance improvements
+Improve how test cases run are handled (join test cases that are from the same file)
+Implement run all tests command
+Fix grep calculation bug
+Fix mochatestfinder bugs
+Cleanup
+
 ### 0.0.1
 
 Beta Initial release 

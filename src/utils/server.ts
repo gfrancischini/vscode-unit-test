@@ -29,7 +29,7 @@ export function startServer(cwd: string) {
     });
 
     childProcess.stderr.on("data", data => {
-        //console.log("STD_ERROR: " + data);
+        console.log("STD_ERROR: " + data);
     });
 
     childProcess.on("exit", code => {
