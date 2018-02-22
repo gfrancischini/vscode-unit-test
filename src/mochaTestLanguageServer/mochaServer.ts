@@ -1,4 +1,4 @@
-import { StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc';
+import { StreamMessageReader, StreamMessageWriter, SocketMessageWriter } from 'vscode-jsonrpc';
 import {
     InitializeRequest, InitializeParams, InitializeResult, InitializeError,
     RunTestCasesParams, RunTestCasesResult,
@@ -10,6 +10,9 @@ import { escapeRegex } from "../utils/string"
 import { TestLanguageServer } from "../testLanguage/server/testLanguageServer"
 import { RunMochaProcess } from './mochaRunner'
 import { MochaTestFinder } from "./mochaTestFinder"
+import * as fs from "fs"
+import * as net from "net";
+
 class MochaTestLanguageServer extends TestLanguageServer {
     //TODO implement a way to join test cases everytime we run the on discovery
     protected testCases: Array<TestCase> = new Array<TestCase>();
@@ -42,10 +45,12 @@ class MochaTestLanguageServer extends TestLanguageServer {
     }
 }
 
+//writeble strem from fd 3
+const pipe = fs.createWriteStream(null, {fd:3});
 
 const mochaLanguageServer = new MochaTestLanguageServer();
 mochaLanguageServer.listen(new StreamMessageReader(process.stdin),
-    new StreamMessageWriter(process.stdout));
+    new SocketMessageWriter(<any>pipe));
 
 /**
  * Override default console.log to redirect output from user test cases to the appropriate channel
@@ -58,11 +63,11 @@ console.log = function (data: string) {
  * Find all duplicate test cases and log the information
  * @param testCases
  */
-function findDuplicatesTestCases(testCases : Array<TestCase>) {
-    const fullTitles = testCases.map((testCase) => {return testCase.fullTitle});
+function findDuplicatesTestCases(testCases: Array<TestCase>) {
+    const fullTitles = testCases.map((testCase) => { return testCase.fullTitle });
 
     const count = fullTitles =>
-    fullTitles.reduce((a, b) =>
+        fullTitles.reduce((a, b) =>
             Object.assign(a, { [b]: (a[b] || 0) + 1 }), {})
 
     const duplicates = dict =>

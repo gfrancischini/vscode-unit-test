@@ -1,4 +1,4 @@
-import { RequestHandler, createMessageConnection, StreamMessageReader, StreamMessageWriter, NotificationType } from 'vscode-jsonrpc';
+import { RequestHandler, createMessageConnection, MessageReader, MessageWriter, NotificationType } from 'vscode-jsonrpc';
 import {
     InitializeRequest, InitializeParams, InitializeResult, InitializeError,
     RunTestCasesRequest,DiscoveryTestCasesRequest,
@@ -26,9 +26,9 @@ export class TestLanguageServer {
         return this.connection;
     }
 
-    private createConnection(input: StreamMessageReader, output: StreamMessageWriter) {
+    private createConnection(input: MessageReader, output: MessageWriter) {
         let msgConnection = createMessageConnection(input, output);
-
+        
         let result: IConnection = {
             listen: (): void => msgConnection.listen(),
             onInitialize: (handler) => msgConnection.onRequest(InitializeRequest.type, handler),
@@ -53,7 +53,7 @@ export class TestLanguageServer {
 
     }
 
-    public listen(input: StreamMessageReader, output: StreamMessageWriter) {
+    public listen(input: MessageReader, output: MessageWriter) {
         this.connection = this.createConnection(input, output);
         this.registerListeners();
         this.connection.listen();

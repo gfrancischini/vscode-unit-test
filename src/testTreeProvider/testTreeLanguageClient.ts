@@ -7,10 +7,9 @@ import * as path from "path";
 import { startServer } from "../utils/server";
 import { TestCaseCollection } from "./testCaseCollection"
 import { TestLanguageClient } from "../testLanguage/client/testLanguageClient"
-import { StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc';
+import { StreamMessageReader, StreamMessageWriter, SocketMessageReader } from 'vscode-jsonrpc';
 import { getMochaGlob, getMochaOptsPath } from "../utils/vsconfig";
 var throttle = require('throttle-debounce/throttle');
-
 import {
     InitializeParams, InitializeResult,
     TestCaseUpdateParams
@@ -21,6 +20,7 @@ enum DebuggerStatus {
     Attaching,
     Attached
 }
+
 
 /**   
  * Class responsible for handling the test communication events 
@@ -54,9 +54,10 @@ export class TestTreeLanguageClient extends TestLanguageClient {
     public async initialize(): Promise<string> {
         const childProcess = startServer(this.directory);
 
-        this.listen(new StreamMessageReader(childProcess.stdout),
+        //our reader stream comes from fd = 3
+        this.listen(new SocketMessageReader(<any>childProcess.stdio[3]),
             new StreamMessageWriter(childProcess.stdin));
-
+     
         const initializeParams: InitializeParams = {
             processId: 1,
             optsPath: path.join(this.directory, getMochaOptsPath())
