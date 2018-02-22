@@ -3,6 +3,7 @@ import * as rpc from 'vscode-jsonrpc';
 import * as path from "path";
 import * as fs from "fs";
 
+
 export function startServer(cwd: string) {
     const modulePath: string = path.join(path.dirname(module.filename), "..", "mochaTestLanguageServer", "mochaServer.js");
 
@@ -18,11 +19,7 @@ export function startServer(cwd: string) {
     //add the module file path as a arg
     spawnArgs.push(modulePath);
 
-    const childProcess = cp.spawn("node", spawnArgs, { cwd: cwd, stdio: ["pipe", "pipe", "pipe", "ipc"] });
-
-    childProcess.on("message", data => {
-        //console.log(new Date().toISOString() + " - MESSAGE: " + data);
-    });
+    const childProcess = cp.spawn("node", spawnArgs, { cwd: cwd, stdio: [null, null, null, "pipe", "pipe"] });
 
     childProcess.stdout.on("data", data => {
         //console.log("STD_OUT: " + data);
@@ -33,7 +30,7 @@ export function startServer(cwd: string) {
     });
 
     childProcess.on("exit", code => {
-        console.log("exit");
+        console.log("exit: " + code);
     });
 
 
