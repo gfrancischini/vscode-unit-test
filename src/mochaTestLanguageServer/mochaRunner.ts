@@ -27,11 +27,13 @@ function managedRequire(id: string) {
         id = path.join(process.cwd(), id);
     }
     try {
-        delete require.cache[id];
-        require(id);
+        if(!require.cache[id]) {
+            //delete require.cache[id];
+            require(id);
+        }
     }
     catch (err) {
-        //console.log(`managedRequire(${id}) - ${err}`);
+        console.log(`managedRequire(${id}) - ${err}`);
     }
 }
 
