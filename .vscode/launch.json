@@ -5,6 +5,7 @@
 {
 	"version": "0.2.0",
     "configurations": [
+
         {
             "name": "Extension",
             "type": "extensionHost",
@@ -35,9 +36,17 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Connect mochaServer",
+            "name": "MochaServer Connect",
            "address": "localhost",
            "port": 9220,
+            "protocol": "inspector"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "MochaRunner Connect",
+           "address": "localhost",
+           "port": 9221,
             "protocol": "inspector"
         },
         {

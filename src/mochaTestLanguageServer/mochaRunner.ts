@@ -92,14 +92,14 @@ export function RunMochaProcess(sessionId: number, optsPath: string, runTestCase
             // delete files from cache for re-evalutation
             delete require.cache[filePath];
             mocha.addFile(filePath);
-
+            
             // only apply grep pattern if not null
             if (grep) {
                 grep = `^(${grep})$`;
                 //console.log(`\nGrep Pattern: ${grep}`);
                 mocha.grep(new RegExp(grep, "i"));
             }
-            (<any>mocha).reporter(customReporter);
+            (<any>mocha).reporter(customReporter, {"xablau" : "alau"});
             //mocha.reporter(ReportsCustom);
             return mocha;
         }
