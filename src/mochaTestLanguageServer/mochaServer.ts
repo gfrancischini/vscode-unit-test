@@ -35,28 +35,32 @@ class MochaTestLanguageServer extends TestLanguageServer {
         this.connection.onRunTestCases(async (params: RunTestCasesParams) => {
             this.mochaRunnerClient = new MochaRunnerClient(12345);
             this.currentTestSession.sesssionId = params.sessionId;
-            this.mochaRunnerClient.connectClient().then((value) => {
-                value.onTestSuiteUpdated((params: TestSuiteUpdateParams) => {
-                    const testCase = this.convertTestSuiteToTestCase(params.type, params.testSuite);
-                    if (testCase) {
-                        this.connection.testCaseUpdate({testCase});
-                    }
-                });
-            });
+            await this.mochaRunnerClient.connectClient(this.initializeParams.rootPath, 12345)
+                .then((client) => {
+                    const dictFileGrep = groupTestByFile(params.testCases);
 
-            await this.mochaRunnerClient.startServer(this.initializeParams.rootPath,
-                "C:\\TFS\\SW\\mSeries\\7.0\\MobileApps\\node_modules\\mocha\\bin\\_mocha", 12345)
-                .then((value) => {
-                    return {
-                        "test": "ok"
-                    }
-                });
+                    client.initialize({
+                        filesDict: dictFileGrep,
+                        mochaPath: "C:\\TFS\\SW\\mSeries\\7.0\\MobileApps\\node_modules\\mocha\\bin\\_mocha",
+                        mochaArguments: { optsPath: this.initializeParams.optsPath }
+                    }).then(() => {
+                        console.log("response from initlize");
 
-            /*await RunMochaProcess(params.sessionId, this.initializeParams.optsPath, params.testCases, this.testCases, this.getConnection(), params.debug).then(() => {
-                return {
-                    "test": "ok"
-                }
-            });*/
+                        //kill the process
+                        this.mochaRunnerClient.stopServer();
+
+                        return {
+                            "test": "ok"
+                        }
+                    })
+
+                    client.onTestSuiteUpdated((params: TestSuiteUpdateParams) => {
+                        const testCase = this.convertTestSuiteToTestCase(params.type, params.testSuite);
+                        if (testCase) {
+                            this.connection.testCaseUpdate({ testCase });
+                        }
+                    });
+                });
 
         });
 
@@ -109,11 +113,14 @@ class MochaTestLanguageServer extends TestLanguageServer {
         if (testCase) {
             switch (type) {
                 case TestSuiteUpdateType.Start:
-                case TestSuiteUpdateType.SuiteStart:
+                    this.currentTestSession.qtyOfFailures = 0;
+                    this.currentTestSession.qtyOfSkip = 0;
+                    this.currentTestSession.qtyOfSuccess = 0;
                 case TestSuiteUpdateType.TestStart:
+                case TestSuiteUpdateType.SuiteStart:
+                    testCase.startTime = new Date();
                     testCase.isRunning = true;
                     testCase.sessionId = sessionId;
-                    testCase.startTime = new Date();
                     break;
                 case TestSuiteUpdateType.TestFail:
                     this.currentTestSession.qtyOfFailures++;
@@ -138,6 +145,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
                     testCase.sessionId = sessionId;
                     testCase.duration = 0
                     break;
+                case TestSuiteUpdateType.Failure:
                 case TestSuiteUpdateType.HookFail:
                     this.currentTestSession.qtyOfFailures++;
                     testCase.isRunning = false;
@@ -154,7 +162,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
                 case TestSuiteUpdateType.End:
                     testCase.isRunning = false;
                     testCase.endTime = new Date();
-                    testCase.duration = testCase.endTime.getTime() - testCase.startTime.getTime();
+                    //testCase.duration = testCase.endTime.getTime() - testCase.startTime.getTime();
 
                     if (this.currentTestSession.qtyOfFailures > 0) {
                         testCase.status = TestCaseStatus.Failed;
@@ -217,6 +225,29 @@ class MochaTestLanguageServer extends TestLanguageServer {
 
 
 }
+
+
+function calculateGrep(testCase: TestCase) {
+    if (testCase.parendId == null) {
+        //when there is no parentId we are sending the entire file to test
+        return null;
+    }
+    return escapeRegex(testCase.fullTitle);
+}
+
+function groupTestByFile(testCases: Array<TestCase>) {
+    const dict = {};
+    testCases.forEach((testCase) => {
+        if (dict[testCase.path] == null) {
+            dict[testCase.path] = calculateGrep(testCase);
+        }
+        else {
+            dict[testCase.path] = dict[testCase.path] + "|" + calculateGrep(testCase);
+        }
+    })
+    return dict;
+}
+
 
 //writeble strem from fd 3
 const pipe = fs.createWriteStream(null, { fd: 3 });

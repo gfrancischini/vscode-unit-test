@@ -1,5 +1,8 @@
 import { createClientSocketTransport, NotificationType, createMessageConnection } from 'vscode-jsonrpc';
-import { TestSuiteUpdateNotification, TestSuiteUpdateParams } from './protocol';
+import {
+    RunRequest, RunParams, RunResult,
+    TestSuiteUpdateNotification, TestSuiteUpdateParams
+} from './protocol';
 import { startMochaRunnerServer } from "./mochaCaller"
 import * as fs from "fs"
 import * as cp from "child_process";
@@ -7,6 +10,7 @@ import * as net from "net";
 
 export interface IConnection {
     listen(): void;
+    initialize(params: RunParams): Thenable<RunResult>;
     onTestSuiteUpdated(handler: any): void;
 }
 
@@ -17,7 +21,7 @@ export class MochaRunnerClient {
 
     private childProcess: cp.ChildProcess = null;
 
-    constructor(port : number) {
+    constructor(port: number) {
         this.port = port;
     }
 
@@ -31,6 +35,7 @@ export class MochaRunnerClient {
 
         let result: IConnection = {
             listen: (): void => msgConnection.listen(),
+            initialize: (params: RunParams) => msgConnection.sendRequest(RunRequest.type, params),
             onTestSuiteUpdated: (handler) => msgConnection.onNotification(TestSuiteUpdateNotification.type, handler),
             //onDataOutput: (handler) => msgConnection.onNotification(DataOutputNotification.type, handler),
         }
@@ -38,10 +43,15 @@ export class MochaRunnerClient {
         return result;
     }
 
-    public connectClient(): Promise<IConnection> {
+    public connectClient(cwd, port): Promise<IConnection> {
 
         return new Promise<IConnection>((resolve, reject) => {
             createClientSocketTransport(this.port).then((transport) => {
+                this.startServer(cwd, port)
+                    .then((value) => {
+
+                    });
+
                 transport.onConnected().then((protocol) => {
                     this.connection = this.createConnection(protocol[0], protocol[1]);
                     this.connection.listen();
@@ -51,9 +61,9 @@ export class MochaRunnerClient {
         });
     }
 
-    public startServer(cwd, mochaPath, port): Promise<boolean> {
+    public startServer(cwd, port): Promise<boolean> {
         const mochaArgs = new Array<string>();
-        this.childProcess = startMochaRunnerServer(cwd, mochaPath, port, mochaArgs);
+        this.childProcess = startMochaRunnerServer(cwd, port);
 
         return new Promise((resolve, reject) => {
             this.childProcess.on("close", () => {
@@ -65,7 +75,7 @@ export class MochaRunnerClient {
 
     public stopServer() {
         if (this.childProcess != null) {
-            this.childProcess.kill("-1");
+            this.childProcess.kill("SIGINT");
         }
     }
 }

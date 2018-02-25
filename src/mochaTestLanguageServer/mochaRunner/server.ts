@@ -1,9 +1,11 @@
 import { createServerSocketTransport, NotificationType, createMessageConnection } from 'vscode-jsonrpc';
-import { TestSuiteUpdateNotification, TestSuiteUpdateParams } from './protocol';
+import { RunRequest,
+    TestSuiteUpdateNotification, TestSuiteUpdateParams } from './protocol';
 
 export interface IConnection {
     listen(): void;
     testSuiteUpdate(params: TestSuiteUpdateParams): void;
+    onRun(handler: any): void;
     //dataOutput(params: DataOutputParams): void;
 }
 
@@ -24,6 +26,7 @@ export class MochaRunnerServer {
 
         let result: IConnection = {
             listen: (): void => msgConnection.listen(),
+            onRun: (handler) => msgConnection.onRequest(RunRequest.type, handler),
             testSuiteUpdate: (params: TestSuiteUpdateParams) => msgConnection.sendNotification(TestSuiteUpdateNotification.type, params),
             //dataOutput: (params: DataOutputParams) => msgConnection.sendNotification(DataOutputNotification.type, params)
         }

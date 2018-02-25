@@ -1,5 +1,6 @@
-import { MochaRunnerServer } from "./server"
+import { mochaRunnerServer } from "./serverInstance"
 import { TestSuite, TestSuiteUpdateType, TestSuiteUpdateParams } from "./protocol"
+//import * as mocha from "mocha";
 
 interface MochaCustomReporterOptions {
     port: number
@@ -16,14 +17,17 @@ function getFullTitle(item: { title, parent }): string {
     return item.title;
 }
 
-function toTestSuite(item): TestSuite {
+function toTestSuite(item, err = null): TestSuite {
     try {
         return {
             path: item.file,
             fullTitle: getFullTitle(item),
             title: item.title,
             duration: item.duration,
-            err: item.err
+            err: err ? {
+                message: err.message,
+                stack: err.stack
+            } : null
         }
     }
     catch (err) {
@@ -32,21 +36,20 @@ function toTestSuite(item): TestSuite {
 }
 
 
+
 /**
    * Create a custom mocha test reporter
    * @param runner The runner
    * @param options Mocha Option
    */
-async function MochaCustomReporter(runner: any, options: { reporterOptions: MochaCustomReporterOptions }) {
-    const mochaRunnerServer: MochaRunnerServer = new MochaRunnerServer(options.reporterOptions.port);
+export async function MochaCustomReporter(runner: any, options: { files: Array<string>, reporterOptions: MochaCustomReporterOptions }) {
+    //(<any>mocha).reporters.Base.call(this, runner);
 
-    var x = await mochaRunnerServer.connectServer();
 
-    const currentFilePath = "";
-    let currentFileIndex = -1;
+
+    let currentFilePath = options.files[0];
     runner
-        .on("start", start => {
-            currentFileIndex++;
+        .on("start", () => {
             mochaRunnerServer.getConnection().testSuiteUpdate({
                 type: TestSuiteUpdateType.Start,
                 testSuite: {
@@ -57,7 +60,7 @@ async function MochaCustomReporter(runner: any, options: { reporterOptions: Moch
             });
         })
         .on("suite", suite => {
-            // mocha adds a main suite for every test file. We are going to skip this
+            // mocha adds a main suite without title for every test file. We are going to skip this as a suite
             if (!suite.title) {
                 return;
             }
@@ -68,7 +71,7 @@ async function MochaCustomReporter(runner: any, options: { reporterOptions: Moch
             });
         })
         .on("suite end", (suite) => {
-            // mocha adds a main suite for every test file. We are going to skip this
+            // mocha adds a main suite without title for every test file. We are going to skip this as a suite
             if (!suite.title) {
                 return;
             }
@@ -76,6 +79,12 @@ async function MochaCustomReporter(runner: any, options: { reporterOptions: Moch
             mochaRunnerServer.getConnection().testSuiteUpdate({
                 type: TestSuiteUpdateType.SuiteEnd,
                 testSuite: toTestSuite(suite)
+            });
+        })
+        .on("test", (test) => {
+            mochaRunnerServer.getConnection().testSuiteUpdate({
+                type: TestSuiteUpdateType.TestStart,
+                testSuite: toTestSuite(test)
             });
         })
         .on("pass", (test) => {
@@ -88,13 +97,13 @@ async function MochaCustomReporter(runner: any, options: { reporterOptions: Moch
             if (test.type === "hook" && test.parent != null) {
                 mochaRunnerServer.getConnection().testSuiteUpdate({
                     type: TestSuiteUpdateType.HookFail,
-                    testSuite: toTestSuite(test.parent)
+                    testSuite: toTestSuite(test.parent, err)
                 });
             }
             else {
                 mochaRunnerServer.getConnection().testSuiteUpdate({
                     type: TestSuiteUpdateType.TestFail,
-                    testSuite: toTestSuite(test)
+                    testSuite: toTestSuite(test, err)
                 });
             }
 
@@ -114,13 +123,7 @@ async function MochaCustomReporter(runner: any, options: { reporterOptions: Moch
                     fullTitle: ""
                 }
             });
-        })
-        .on("test", (test) => {
-            mochaRunnerServer.getConnection().testSuiteUpdate({
-                type: TestSuiteUpdateType.TestStart,
-                testSuite: toTestSuite(test)
-            });
         });
 }
 
-module.exports = MochaCustomReporter;
+//module.exports = MochaCustomReporter;
