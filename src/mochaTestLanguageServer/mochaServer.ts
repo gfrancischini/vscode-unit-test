@@ -32,36 +32,37 @@ class MochaTestLanguageServer extends TestLanguageServer {
     public registerListeners() {
         super.registerListeners();
 
-        this.connection.onRunTestCases(async (params: RunTestCasesParams) => {
+        this.connection.onRunTestCases((params: RunTestCasesParams) => {
             this.mochaRunnerClient = new MochaRunnerClient(12345);
             this.currentTestSession.sesssionId = params.sessionId;
-            await this.mochaRunnerClient.connectClient(this.initializeParams.rootPath, 12345)
-                .then((client) => {
-                    const dictFileGrep = groupTestByFile(params.testCases);
+            return new Promise((resolve, reject) => {
+                this.mochaRunnerClient.connectClient(this.initializeParams.rootPath, 12345)
+                    .then((client) => {
+                        const dictFileGrep = groupTestByFile(params.testCases);
 
-                    client.initialize({
-                        filesDict: dictFileGrep,
-                        mochaPath: "C:\\TFS\\SW\\mSeries\\7.0\\MobileApps\\node_modules\\mocha\\bin\\_mocha",
-                        mochaArguments: { optsPath: this.initializeParams.optsPath }
-                    }).then(() => {
-                        console.log("response from initlize");
+                        client.initialize({
+                            filesDict: dictFileGrep,
+                            mochaPath: "C:\\TFS\\SW\\mSeries\\7.0\\MobileApps\\node_modules\\mocha\\bin\\_mocha",
+                            mochaArguments: { optsPath: this.initializeParams.optsPath }
+                        }).then(() => {
+                            console.log("response from initlize");
 
-                        //kill the process
-                        this.mochaRunnerClient.stopServer();
+                            //kill the process
+                            this.mochaRunnerClient.stopServer();
 
-                        return {
-                            "test": "ok"
-                        }
-                    })
+                            resolve( {
+                                "test": "ok"
+                            })
+                        })
 
-                    client.onTestSuiteUpdated((params: TestSuiteUpdateParams) => {
-                        const testCase = this.convertTestSuiteToTestCase(params.type, params.testSuite);
-                        if (testCase) {
-                            this.connection.testCaseUpdate({ testCase });
-                        }
+                        client.onTestSuiteUpdated((params: TestSuiteUpdateParams) => {
+                            const testCase = this.convertTestSuiteToTestCase(params.type, params.testSuite);
+                            if (testCase) {
+                                this.connection.testCaseUpdate({ testCase });
+                            }
+                        });
                     });
-                });
-
+            });
         });
 
         this.connection.onDiscoveryTestCases((params: DiscoveryTestCasesParams): DiscoveryTestCasesResult => {
