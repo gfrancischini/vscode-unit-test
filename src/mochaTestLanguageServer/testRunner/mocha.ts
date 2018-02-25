@@ -9,8 +9,7 @@ let Mocha;
 //wait the initliazation of the server instance
 initalize(12345);
 
-
-
+//when run command is rcvd we start runinng the tests
 mochaRunnerServer.getConnection().onRun(async (params: RunParams) => {
     try {
         await run(params.mochaPath, params.mochaArguments.optsPath, params.filesDict)
@@ -21,11 +20,17 @@ mochaRunnerServer.getConnection().onRun(async (params: RunParams) => {
 
     //send a message telling the client that we are end
     return {
-
+        success : true
     }
 })
 
-async function run(_mochaPath, optsPath, filesDict) {
+/**
+ * Dynamic creation of a mocha tester for each file
+ * @param _mochaPath 
+ * @param optsPath 
+ * @param filesDict 
+ */
+async function run(_mochaPath : string, optsPath : string, filesDict: {}) {
     Mocha = require(path.join(_mochaPath, '../', '../'));
     const opts = optsPath ? getOptions(optsPath) : null;
 
@@ -41,6 +46,11 @@ async function run(_mochaPath, optsPath, filesDict) {
     }
 }
 
+/**
+ * Run the dynamic mocha tester
+ * @param path 
+ * @param mocha 
+ */
 function runMocha(path: string, mocha: Mocha): Promise<any> {
     return new Promise((resolve, reject) => {
         try {
@@ -68,12 +78,14 @@ function runMocha(path: string, mocha: Mocha): Promise<any> {
     });
 }
 
+/**
+ * Create the dynamic mocha tester
+ * @param filePath 
+ * @param grep 
+ * @param opts 
+ */
 function createMocha(filePath: string, grep: string, opts?): Mocha {
-
-
-    //const Mocha: any = require("mocha");
     const mocha: Mocha = new Mocha({ ui: "bdd", timeout: 999999 });
-    mocha.ui("bdd");
 
     if (opts) {
         applyMochaOpts(opts, mocha);
@@ -89,11 +101,16 @@ function createMocha(filePath: string, grep: string, opts?): Mocha {
         //console.log(`\nGrep Pattern: ${grep}`);
         mocha.grep(new RegExp(grep, "i"));
     }
+
     (<any>mocha).reporter(MochaCustomReporter, { "port": 12345 });
-    //mocha.reporter(ReportsCustom);
+
     return mocha;
 }
 
+/**
+ * Require the files
+ * @param id 
+ */
 function managedRequire(id: string) {
     if (path.isAbsolute(id) === false && !path.extname) {
         //when the path is not absolute we should try to load it from node_modules folder
@@ -113,13 +130,13 @@ function managedRequire(id: string) {
     }
 }
 
-function applyMochaOpts(opts, mocha: Mocha) {
-    if (opts == null) {
-        return;
-    }
 
-    //console.log("Options: " + JSON.stringify(this.opts));
-
+/**
+ * Apply the mocha options to the mocha
+ * @param opts 
+ * @param mocha 
+ */
+function applyMochaOpts(opts: Array<{key, value}>, mocha: Mocha) {
     opts.forEach(option => {
         switch (option.key) {
             case "--require":
@@ -136,7 +153,12 @@ function applyMochaOpts(opts, mocha: Mocha) {
 
 }
 
-export function getOptions(optsPath) {
+/**
+ * Read mocha.opts file
+ * @param optsPath The path to read the file
+ * @return Array of found options
+ */
+export function getOptions(optsPath): Array<{ key, value }> {
     try {
         const opts = fs.readFileSync(optsPath, 'utf8')
             .replace(/\\\s/g, '%20')
@@ -144,7 +166,7 @@ export function getOptions(optsPath) {
             .filter(Boolean)
             .map(value => value.replace(/%20/g, ' '));
 
-        const options = new Array<{}>();
+        const options = new Array<{ key, value }>();
         if (opts) {
             for (let i = 0; i < opts.length; i = i + 2)
                 options.push({ key: opts[i], value: opts[i + 1] });

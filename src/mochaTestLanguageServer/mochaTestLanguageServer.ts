@@ -1,26 +1,28 @@
-import { StreamMessageReader, StreamMessageWriter, SocketMessageWriter } from 'vscode-jsonrpc';
+import * as fs from "fs"
+import { StreamMessageReader, SocketMessageWriter } from 'vscode-jsonrpc';
 import {
-    InitializeRequest, InitializeParams, InitializeResult, InitializeError,
     RunTestCasesParams, RunTestCasesResult,
-    TestCaseUpdateNotification, TestCaseUpdateParams, DiscoveryTestCasesParams, DiscoveryTestCasesResult
+    DiscoveryTestCasesParams, DiscoveryTestCasesResult
 } from "../testLanguage/protocol"
 import { TestCase, TestCaseStatus } from "../testLanguage/protocol";
-import * as path from "path";
 import { escapeRegex } from "../utils/string"
 import { TestLanguageServer } from "../testLanguage/server/testLanguageServer"
-import { RunMochaProcess } from './mochaRunner'
-import { MochaTestFinder } from "./mochaTestFinder"
-import * as fs from "fs"
-import * as net from "net";
-import { MochaRunnerClient } from "./mochaRunner/client"
-import { TestSuite, TestSuiteUpdateParams, TestSuiteUpdateType } from "./mochaRunner/protocol"
+import { MochaTestFinder } from "./testFinder/mochaTestFinder"
+import { MochaRunnerClient } from "./testRunner/client"
+import { TestSuite, TestSuiteUpdateParams, TestSuiteUpdateType } from "./testRunner/protocol"
 
 class MochaTestLanguageServer extends TestLanguageServer {
     //TODO implement a way to join test cases everytime we run the on discovery
     protected testCases: Array<TestCase> = new Array<TestCase>();
 
+    /**
+     * The moccha runner client responsible for running the tests
+     */
     protected mochaRunnerClient: MochaRunnerClient;
 
+    /**
+     * The current test session results
+     */
     protected currentTestSession = {
         sesssionId: 0,
         qtyOfFailures: 0,
@@ -29,6 +31,9 @@ class MochaTestLanguageServer extends TestLanguageServer {
 
     }
 
+    /**
+     * Register the testLanguageServer listeners
+     */
     public registerListeners() {
         super.registerListeners();
 
@@ -50,7 +55,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
                             //kill the process
                             this.mochaRunnerClient.stopServer();
 
-                            resolve( {
+                            resolve({
                                 "test": "ok"
                             })
                         })
@@ -108,8 +113,13 @@ class MochaTestLanguageServer extends TestLanguageServer {
         });
     }
 
+    /**
+     * Convert aa TestSuite to the TestCase protocol
+     * @param type 
+     * @param testSuite 
+     */
     private convertTestSuiteToTestCase(type: TestSuiteUpdateType, testSuite: TestSuite): TestCase {
-        const testCase: TestCase = this.findTestCaseByName(this.testCases, testSuite.fullTitle, testSuite.path);
+        const testCase: TestCase = this.findTestCaseByFullTitleAndPath(this.testCases, testSuite.fullTitle, testSuite.path);
         const sessionId = this.currentTestSession.sesssionId;
         if (testCase) {
             switch (type) {
@@ -183,12 +193,12 @@ class MochaTestLanguageServer extends TestLanguageServer {
     }
 
     /**
-     * 
+     * Find a test case by fullTitle and path
      * @param testCases 
      * @param fullTitle 
      * @param path 
      */
-    private findTestCaseByName(testCases: Array<TestCase>, fullTitle: string, path: string) {
+    private findTestCaseByFullTitleAndPath(testCases: Array<TestCase>, fullTitle: string, path: string) {
         const filtered = testCases.filter((testCase) => {
             return testCase.fullTitle === fullTitle && testCase.path === path;
         });
@@ -196,7 +206,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
     }
 
     /**
-     * 
+     * Search for every test case the is children (recursive) and copy the results
      * @param testCases 
      * @param parentTestCase 
      */
@@ -222,13 +232,13 @@ class MochaTestLanguageServer extends TestLanguageServer {
             this.markEveryChildWithParentError(testCases, testCase);
         })
     }
-
-
-
 }
 
-
-function calculateGrep(testCase: TestCase) {
+/**
+ * Calculate the grep of a test case
+ * @return the grep
+ */
+function calculateGrep(testCase: TestCase) : string {
     if (testCase.parendId == null) {
         //when there is no parentId we are sending the entire file to test
         return null;
@@ -236,6 +246,10 @@ function calculateGrep(testCase: TestCase) {
     return escapeRegex(testCase.fullTitle);
 }
 
+/**
+ * Group test cases by files and calculate de grep
+ * @param testCases 
+ */
 function groupTestByFile(testCases: Array<TestCase>) {
     const dict = {};
     testCases.forEach((testCase) => {

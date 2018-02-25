@@ -21,23 +21,40 @@ export interface TestSuite {
     err?;
 }
 
+/**
+ * The result returned from an testsuite update notificaition.
+ */
 export interface TestSuiteUpdateParams {
     type: TestSuiteUpdateType;
     testSuite: TestSuite;
 }
 
 
-
+/** 
+ * A test update noficiation is send from the server to the client when a test is updated
+ * The notification params is of type TestSuiteUpdateParams[#TestSuiteUpdateParams]
+ */
 export namespace TestSuiteUpdateNotification {
     export const type = new NotificationType<TestSuiteUpdateParams, void>('testSuiteUpdate');
 }
 
-
+/** 
+ * The params required for the RunRequest
+ */
 export interface RunParams {
+    /**
+	 * The mocha path.
+	 */
     mochaPath: string,
 
+    /**
+	 * The files/grep dict
+	 */
     filesDict: {},
 
+    /**
+	 * Custom mocha arguments
+	 */
     mochaArguments: any,
 
 	/**
@@ -47,23 +64,22 @@ export interface RunParams {
 }
 
 /**
- * The result returned from an initilize request.
+ * The result returned from an run request.
  */
 export interface RunResult {
 }
 
 /**
  * The data type of the ResponseError if the
- * initialize request fails.
+ * run request fails.
  */
 export interface RunError {
 }
 
 /**
- * The initialize request is sent from the client to the server.
- * It is sent once as the request after starting up the server.
- * The requests parameter is of type [InitializeParams](#InitializeParams)
- * the response if of type [InitializeResult](#InitializeResult) of a Thenable that
+ * The run request is sent from the client to the server.
+ * The requests parameter is of type [RunParams](#RunParams)
+ * the response if of type [RunResult](#RunResult) of a Thenable that
  * resolves to such.
  */
 export namespace RunRequest {

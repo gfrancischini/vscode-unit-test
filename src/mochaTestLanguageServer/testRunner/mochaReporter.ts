@@ -1,10 +1,5 @@
 import { mochaRunnerServer } from "./serverInstance"
 import { TestSuite, TestSuiteUpdateType, TestSuiteUpdateParams } from "./protocol"
-//import * as mocha from "mocha";
-
-interface MochaCustomReporterOptions {
-    port: number
-}
 
 /**
  * Get the full title from a item
@@ -17,6 +12,11 @@ function getFullTitle(item: { title, parent }): string {
     return item.title;
 }
 
+/**
+ * Convert a mocha test, suite to the TestSuite interface
+ * @param item 
+ * @param err 
+ */
 function toTestSuite(item, err = null): TestSuite {
     try {
         return {
@@ -36,16 +36,13 @@ function toTestSuite(item, err = null): TestSuite {
 }
 
 
-
 /**
    * Create a custom mocha test reporter
    * @param runner The runner
    * @param options Mocha Option
    */
-export async function MochaCustomReporter(runner: any, options: { files: Array<string>, reporterOptions: MochaCustomReporterOptions }) {
-    //(<any>mocha).reporters.Base.call(this, runner);
-
-
+export async function MochaCustomReporter(runner: any, options: { files: Array<string>, reporterOptions: any }) {
+    (<any>mocha).reporters.Base.call(this, runner);
 
     let currentFilePath = options.files[0];
     runner
@@ -125,5 +122,3 @@ export async function MochaCustomReporter(runner: any, options: { files: Array<s
             });
         });
 }
-
-//module.exports = MochaCustomReporter;
