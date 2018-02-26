@@ -15,7 +15,7 @@ export function isAutoInitializeEnabled(): boolean {
 }
 
 export function getTestProviderSettings(testProviderName : string): vscode.WorkspaceConfiguration {
-    const configuration  = vscode.workspace.getConfiguration(testProviderName);
+    const configuration  = vscode.workspace.getConfiguration(`unit.test.${testProviderName}`);
     return configuration;
 }
 
