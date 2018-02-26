@@ -36,7 +36,7 @@ export class TestCaseCollection {
     }
 
     public push(testCase: TestCase) {
-        this.testCasesDictionary.setValue(testCase.getId(), testCase);
+        this.testCasesDictionary.setValue(testCase.id, testCase);
         /*if (testCase.children == null) {
             return;
         }
@@ -64,7 +64,7 @@ export class TestCaseCollection {
         testCases.push(...filtered);
 
         filtered.forEach((testCase) => {
-            testCases.push(...this.findAllChildrens(testCase.getId()));
+            testCases.push(...this.findAllChildrens(testCase.id));
         })
 
         return testCases;

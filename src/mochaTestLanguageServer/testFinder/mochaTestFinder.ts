@@ -2,7 +2,7 @@ import * as ts from "typescript";
 import * as fs from "fs-extra";
 import * as path from "path";
 import { MochaTestCase, SuiteItem, DescribeItem, ItItem } from "./MochaTestCase";
-import { TestCase } from "../testLanguage/protocol";
+import { TestCase } from "../../testLanguage/protocol";
 export class MochaTestFinder {
     
     /**
@@ -16,10 +16,10 @@ export class MochaTestFinder {
             filePath, textTestFile, ts.ScriptTarget.Latest, false, ts.ScriptKind.Unknown);
 
         const testCase = new TestCase();
-        testCase.setLine(0);
+        testCase.line = 0;
 
-        testCase.setPath(sourceFile.fileName);
-        testCase.setTitle(path.basename(sourceFile.fileName));
+        testCase.path = sourceFile.fileName;
+        testCase.title = path.basename(sourceFile.fileName);
         testCase.fullTitle = "";
         testCase.isTestCase = false;
         testCase.code = `${testCase.title}${testCase.path}`
@@ -57,14 +57,14 @@ export class MochaTestFinder {
 
                         let result: SuiteItem = new SuiteItem();
 
-                        result.setLine(sourceFile.getLineAndCharacterOfPosition(pos).line);
+                        result.line = sourceFile.getLineAndCharacterOfPosition(pos).line;
 
-                        result.setTitle(MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases));
+                        result.title = MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases);
                         const parentTitle = parent != null ? parent.fullTitle : null;
                         result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
                         //result.setChildren(children);
-                        result.parendId = parent != null && parent.getId();
-                        result.setPath(sourceFile.fileName);
+                        result.parendId = parent != null && parent.id;
+                        result.path = sourceFile.fileName;
 
                         result.code = `${result.title}${result.path}`
                         let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result, testCases);
@@ -85,14 +85,14 @@ export class MochaTestFinder {
 
 
                         let result: DescribeItem = new DescribeItem();
-                        result.setLine(sourceFile.getLineAndCharacterOfPosition(pos).line);
+                        result.line = sourceFile.getLineAndCharacterOfPosition(pos).line;
 
-                        result.setTitle(MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases));
+                        result.title = MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases);
                         const parentTitle = parent != null ? parent.fullTitle : null;
                         result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
                         //result.setChildren(children);
-                        result.parendId = parent != null && parent.getId();
-                        result.setPath(sourceFile.fileName);
+                        result.parendId = parent != null && parent.id;
+                        result.path = sourceFile.fileName;
                         result.code = `${result.title}${result.path}`
                         result.isTestCase = false;
                         let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result, testCases);
@@ -113,13 +113,13 @@ export class MochaTestFinder {
                         const pos: number = sourceFile.text.lastIndexOf("it", obj.arguments[0].pos);
 
                         let result: ItItem = new ItItem();
-                        result.setLine(sourceFile.getLineAndCharacterOfPosition(pos).line);
+                        result.line = sourceFile.getLineAndCharacterOfPosition(pos).line;
 
-                        result.setTitle(MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases));
+                        result.title = MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases);
                         const parentTitle = parent != null ? parent.fullTitle : null;
                         result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
-                        result.setPath(sourceFile.fileName);
-                        result.parendId = parent != null && parent.getId();
+                        result.path = sourceFile.fileName;
+                        result.parendId = parent != null && parent.id;
                         result.code = `${result.title}${result.path}`
                         result.hasChildren = false;
                         testCases.push(result);

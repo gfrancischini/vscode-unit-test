@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { TestCase, TestCaseStatus } from "../testLanguage/protocol"
 import { TreeLabel } from "./treeLabel"
 import { GroupByProvider } from "./groupByProvider"
-import { isExtensionEnabled, isAutoInitializeEnabled } from "../utils/vsconfig"
+import { isExtensionEnabled, isAutoInitializeEnabled, getCurrentTestProviderName } from "../utils/vsconfig"
 import { getImageResource } from "../utils/image"
 import { TestTreeLanguageClient } from "./testTreeLanguageClient"
 import * as Collections from "typescript-collections";
@@ -13,8 +13,7 @@ import { TestTreeType } from "./treeType"
  * @param context 
  */
 export function RegisterVSTestTreeProvider(context: vscode.ExtensionContext) {
-    let testTreeDataProvider: TestTreeDataProvider;
-    testTreeDataProvider = new TestTreeDataProvider(context);
+    const testTreeDataProvider: TestTreeDataProvider = new TestTreeDataProvider(context);
     vscode.window.registerTreeDataProvider("unit.test.explorer.vsTestTree", testTreeDataProvider);
 }
 
@@ -63,6 +62,8 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * 
      */
     constructor(private context: vscode.ExtensionContext) {
+        this.readSettings(vscode.workspace.workspaceFolders[0].uri);
+
         //todo: bug here when there is more than one workspace folders
         this.rootDir = vscode.workspace.workspaceFolders[0].uri.fsPath;
         this.testLanguageClient = new TestTreeLanguageClient(this.rootDir);
@@ -73,6 +74,10 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
 
             this.discoveryTests();
         });
+    }
+
+    private readSettings(scope : vscode.Uri) {
+        const currentProviderName = getCurrentTestProviderName(scope);
     }
 
     /**
@@ -93,7 +98,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
                 return Promise.resolve(item.getChildren() ? item.getChildren() : []);
             }
             const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
-                return testCase.parendId === item.getId();
+                return testCase.parendId === item.id;
             });
             return Promise.resolve(filtered);
         }
@@ -264,7 +269,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             this.testLanguageClient.runTests(item.getChildren(), debug);
         }
         else {
-            const testCases = this.testLanguageClient.testCaseCollection.findAllChildrens(item.getId());
+            const testCases = this.testLanguageClient.testCaseCollection.findAllChildrens(item.id);
             testCases.push(item);
             this.testLanguageClient.runTests(testCases, debug);
         }
