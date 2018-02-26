@@ -96,11 +96,11 @@ class MochaTestLanguageServer extends TestLanguageServer {
             this.mochaRunnerClient = new MochaRunnerClient(12345);
             this.currentTestSession.sesssionId = params.sessionId;
             return new Promise((resolve, reject) => {
-                this.mochaRunnerClient.connectClient(this.initializeParams.rootPath, 12345)
+                this.mochaRunnerClient.connectClient(this.initializeParams.rootPath)
                     .then((client) => {
                         const dictFileGrep = groupTestByFile(params.testCases);
 
-                        const optsPath = path.join(this.initializeParams.rootPath, this.getProviderSettings().opts)
+                        const optsPath = path.join(this.initializeParams.rootPath, this.getProviderSettings().opts);
 
                         client.initialize({
                             filesDict: dictFileGrep,

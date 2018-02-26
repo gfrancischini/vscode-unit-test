@@ -7,6 +7,7 @@ import { startMochaRunnerServer } from "./mochaCaller"
 import * as fs from "fs"
 import * as cp from "child_process";
 import * as net from "net";
+import * as portfinder from "portfinder"
 
 export interface IConnection {
     listen(): void;
@@ -43,21 +44,26 @@ export class MochaRunnerClient {
         return result;
     }
 
-    public connectClient(cwd, port): Promise<IConnection> {
+    public connectClient(cwd): Promise<IConnection> {
 
         return new Promise<IConnection>((resolve, reject) => {
-            createClientSocketTransport(this.port).then((transport) => {
-                this.startServer(cwd, port)
-                    .then((value) => {
+            portfinder.getPort({ port: 10000 }, (err, port) => {
+                console.log(`starting server on port = ${this.port}`);
+                this.port = port;
+                createClientSocketTransport(this.port).then((transport) => {
+                    this.startServer(cwd, port)
+                        .then((value) => {
 
+                        });
+
+                    transport.onConnected().then((protocol) => {
+                        this.connection = this.createConnection(protocol[0], protocol[1]);
+                        this.connection.listen();
+                        resolve(this.connection);
                     });
-
-                transport.onConnected().then((protocol) => {
-                    this.connection = this.createConnection(protocol[0], protocol[1]);
-                    this.connection.listen();
-                    resolve(this.connection);
                 });
             });
+
         });
     }
 

@@ -6,8 +6,28 @@ import { RunParams, RunResult, TestSuiteUpdateType } from "./protocol"
 
 let Mocha;
 
+
+
+const port = readArgumentPort();
 //wait the initliazation of the server instance
-initalize(12345);
+initalize(port);
+
+/** 
+ * Read the port argument 
+ */
+function readArgumentPort(): number {
+    try {
+        const portArgument = process.argv.filter((value) => {
+            return value.startsWith("--port");
+        });
+
+        return parseInt(portArgument[0].split("=")[1]);
+    }
+    catch (err) {
+        console.log(err);
+    }
+    return -1;
+}
 
 //when run command is rcvd we start runinng the tests
 mochaRunnerServer.getConnection().onRun(async (params: RunParams) => {
@@ -20,7 +40,7 @@ mochaRunnerServer.getConnection().onRun(async (params: RunParams) => {
 
     //send a message telling the client that we are end
     return {
-        success : true
+        success: true
     }
 })
 
@@ -30,7 +50,7 @@ mochaRunnerServer.getConnection().onRun(async (params: RunParams) => {
  * @param optsPath 
  * @param filesDict 
  */
-async function run(_mochaPath : string, optsPath : string, filesDict: {}) {
+async function run(_mochaPath: string, optsPath: string, filesDict: {}) {
     Mocha = require(_mochaPath);
     const opts = optsPath ? getOptions(optsPath) : null;
 
@@ -102,7 +122,7 @@ function createMocha(filePath: string, grep: string, opts?): Mocha {
         mocha.grep(new RegExp(grep, "i"));
     }
 
-    (<any>mocha).reporter(MochaCustomReporter, { "port": 12345 });
+    (<any>mocha).reporter(MochaCustomReporter, null);
 
     return mocha;
 }
@@ -136,7 +156,7 @@ function managedRequire(id: string) {
  * @param opts 
  * @param mocha 
  */
-function applyMochaOpts(opts: Array<{key, value}>, mocha: Mocha) {
+function applyMochaOpts(opts: Array<{ key, value }>, mocha: Mocha) {
     opts.forEach(option => {
         switch (option.key) {
             case "--require":
