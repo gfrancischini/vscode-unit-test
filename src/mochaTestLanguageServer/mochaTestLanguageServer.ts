@@ -1,5 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
+
 import { StreamMessageReader, SocketMessageWriter } from 'vscode-jsonrpc';
 import {
     RunTestCasesParams, RunTestCasesResult,
@@ -65,8 +66,24 @@ class MochaTestLanguageServer extends TestLanguageServer {
         }
     }
 
+    private isMochaAvailable(path : string) : boolean{
+        if(fs.existsSync(path)) {
+            console.log("using mocha from= " + path);
+            return true;
+        }
+    }
+
     private resolveMochaPath() {
-        return "C:\\TFS\\SW\\mSeries\\7.0\\MobileApps\\node_modules\\mocha";
+        if(this.getProviderSettings().mochaPath && this.isMochaAvailable(this.getProviderSettings().mochaPath)) {
+            return this.getProviderSettings().mochaPath
+        }
+        const mochaNodeModulesPath = path.join(this.initializeParams.rootPath, "node_modules", "mocha");
+        if(this.isMochaAvailable(mochaNodeModulesPath)) {
+            return mochaNodeModulesPath;
+        }
+        //return "C:\\TFS\\SW\\mSeries\\7.0\\MobileApps\\node_modules\\mocha";
+        // we should return the mocha installed with the extension
+        return "";
     }
 
     /**
@@ -113,7 +130,10 @@ class MochaTestLanguageServer extends TestLanguageServer {
         this.connection.onDiscoveryTestCases((params: DiscoveryTestCasesParams): DiscoveryTestCasesResult => {
             this.testCases = new Array<TestCase>();
             const testFilesPath = getAllTestFilesInDirectory(params.directory, this.getProviderSettings().glob);
-            testFilesPath.forEach((filePath) => {
+            testFilesPath.forEach((filePath, i) => {
+                this.getConnection().dataOutput({
+                    data : `Discovering test for file ${filePath} - ${i+1}/${testFilesPath.length}`
+                })
                 const discoveryTestCases = new Array<TestCase>();
                 discoveryTestCases.push(...MochaTestFinder.findTestCases(PathUtils.normalizePath(filePath)));
                 this.findDuplicatesTestCases(discoveryTestCases);

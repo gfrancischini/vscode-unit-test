@@ -60,8 +60,15 @@ NodeJS > 8.6 for Running Mocha Tests
 
 This extension contributes the following settings:
 
-* `mocha.glob`: Mocha Glob pattern used to find test files
-* `mocha.opts`: Mocha Opts Path Relative path to the workspace
+```
+"unit.test.mocha" : {
+    "glob": "test/**/*.js",
+    "opts": "/Test/mocha.opts",
+}
+```
+
+* `glob`: Mocha Glob pattern used to find test files
+* `opts`: Mocha Opts Path Relative path to the workspace
 
 ## Known Issues
 
@@ -69,7 +76,11 @@ Calling out known issues can help limit users opening duplicate issues against y
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.1.0
+Major changes in the protocol to exchange information between server and client
+Now the mocha provider is almost a fully extension plugin
+Configuration of the plugin is now handled by each extension.
+Bug fixes
 
 ### 0.0.4 AND 0.0.3
 
