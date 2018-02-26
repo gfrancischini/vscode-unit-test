@@ -176,3 +176,10 @@ export function getOptions(optsPath): Array<{ key, value }> {
         return null;
     }
 }
+
+/**
+ * Override default console.log to redirect output from user test cases to the appropriate channel
+ */
+console.log = function (data: string) {
+    //mochaLanguageServer.getConnection().dataOutput({ data });
+};
