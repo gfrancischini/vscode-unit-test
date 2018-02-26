@@ -1,7 +1,7 @@
 import {RequestType} from 'vscode-jsonrpc';
 import {TestCase} from '../../protocol'
 export interface DiscoveryTestCasesParams {
-	filePaths : Array<string>;
+	directory : string;
 }
 
 /**

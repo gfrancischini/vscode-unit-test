@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { getAllTestFilesInDirectory } from '../utils/directory'
+
 import { TestCase, RunTestCasesResult, DiscoveryTestCasesResult, DataOutputParams } from '../testLanguage/protocol';
 import Event, { Emitter } from "../base/common/Event";
 import * as Collections from "typescript-collections";
@@ -8,8 +8,10 @@ import { startServer } from "../utils/server";
 import { TestCaseCollection } from "./testCaseCollection"
 import { TestLanguageClient } from "../testLanguage/client/testLanguageClient"
 import { StreamMessageReader, StreamMessageWriter, SocketMessageReader } from 'vscode-jsonrpc';
-import { getMochaGlob, getMochaOptsPath } from "../utils/vsconfig";
+import * as cp from 'child_process';
+
 var throttle = require('throttle-debounce/throttle');
+
 import {
     InitializeParams, InitializeResult,
     TestCaseUpdateParams
@@ -26,49 +28,46 @@ enum DebuggerStatus {
  * Class responsible for handling the test communication events 
  */
 export class TestTreeLanguageClient extends TestLanguageClient {
-    private globPattern = "src/**/*.test.js";
-
-
     public testCaseCollection: TestCaseCollection = new TestCaseCollection();
 
     public sessionId: number = 0;
 
     private directory: string = null;
 
+    private providerSettings: any = null;
+
     private debuggerStatus: DebuggerStatus = DebuggerStatus.Disconnected;
+
+    private serverProcess : cp.ChildProcess;
 
     /**
      * Create the test result output channel
      */
     private testOutputChannel = vscode.window.createOutputChannel('Test');
 
-    constructor(directory: string) {
+    constructor(directory: string, providerSettings: any) {
         super();
-        this.globPattern = getMochaGlob();
         this.directory = directory;
+        this.providerSettings = providerSettings;
         this._onDidTestCaseChanged = new Emitter<TestCase>();
         this.watchForWorkspaceFilesChange();
     }
 
 
-    public async initialize(): Promise<string> {
-        const childProcess = startServer(this.directory);
+    public initialize(): Thenable<InitializeResult> {
+        this.serverProcess = startServer(this.directory);
 
         //our reader stream comes from fd = 3
-        this.listen(new SocketMessageReader(<any>childProcess.stdio[3]),
-            new StreamMessageWriter(childProcess.stdin));
-     
+        this.listen(new SocketMessageReader(<any>this.serverProcess.stdio[3]),
+            new StreamMessageWriter(this.serverProcess.stdin));
+
         const initializeParams: InitializeParams = {
+            rootPath: this.directory,
             processId: 1,
-            optsPath: path.join(this.directory, getMochaOptsPath())
+            settings: this.providerSettings
         }
 
-        let version = null;
-        await this.connection.initialize(initializeParams).then((result: InitializeResult) => {
-            console.log(result);
-            version = result.version;
-        });
-        return Promise.resolve(version);
+        return this.connection.initialize(initializeParams);
     }
 
     registerListeners() {
@@ -112,28 +111,21 @@ export class TestTreeLanguageClient extends TestLanguageClient {
     public discoveryWorkspaceTests(directory: string): Promise<Array<TestCase>> {
         this.testOutputChannel.appendLine("Start test discovery");
         return <Promise<Array<TestCase>>>vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: "Test Adapter" }, progress => {
-
+            this.testOutputChannel.appendLine(`Discovering Tests`);
             return new Promise((resolve, reject) => {
-                const testFilesPath = getAllTestFilesInDirectory(directory, this.globPattern);
-
-                testFilesPath.forEach((testFilePath, i) => {
-                    const message = `Discovering Tests: ${i + 1}/${testFilesPath.length}`;
-                    progress.report({ message });
-                    this.testOutputChannel.appendLine(`${message} - ${testFilePath}`);
-                    this.connection.discoveryTestCases({
-                        filePaths: [testFilePath]
-                    }).then((result: DiscoveryTestCasesResult) => {
-                        result.testCases.forEach((testCase) => {
-                            let convertedTestCase: TestCase = Object.assign(new TestCase(), testCase);
-                            this.testCaseCollection.push(convertedTestCase);
-                        });
-                        this._onDidTestCaseChanged.fire(result.testCases[0]);
+                return this.connection.discoveryTestCases({
+                    directory: directory
+                }).then((result: DiscoveryTestCasesResult) => {
+                    result.testCases.forEach((testCase) => {
+                        let convertedTestCase: TestCase = Object.assign(new TestCase(), testCase);
+                        this.testCaseCollection.push(convertedTestCase);
                     });
-                });
+                    this._onDidTestCaseChanged.fire(result.testCases[0]);
 
-                //todo: we need to findtest cases and them do the diff between new tests and excluded ones
-                this.testOutputChannel.appendLine("End of test discovery");
-                return resolve(null);
+                    //todo: we need to findtest cases and them do the diff between new tests and excluded ones
+                    this.testOutputChannel.appendLine("End of test discovery");
+                    return resolve(result.testCases);
+                });
             });
         });
     }
@@ -208,6 +200,10 @@ export class TestTreeLanguageClient extends TestLanguageClient {
                 });
             }
         });
+    }
+
+    public stopServer() {
+        this.serverProcess.kill("SIGINT");
     }
 
     /**

@@ -1,4 +1,5 @@
 import * as fs from "fs"
+import * as path from "path"
 import { StreamMessageReader, SocketMessageWriter } from 'vscode-jsonrpc';
 import {
     RunTestCasesParams, RunTestCasesResult,
@@ -10,6 +11,26 @@ import { TestLanguageServer } from "../testLanguage/server/testLanguageServer"
 import { MochaTestFinder } from "./testFinder/mochaTestFinder"
 import { MochaRunnerClient } from "./testRunner/client"
 import { TestSuite, TestSuiteUpdateParams, TestSuiteUpdateType } from "./testRunner/protocol"
+import { getAllTestFilesInDirectory } from '../utils/directory'
+import { PathUtils } from "../utils/path"
+
+interface MochaProviderSettings {
+    /** 
+     * Mocha Glob pattern used to find test files
+     */
+    glob: string,
+
+    /** 
+     * Mocha Opts Path Relative path to the workspace
+     */
+    opts: string,
+
+    /**
+     * Mocha Path Relative path to the workspace
+     */
+    mochaPath: string
+}
+
 
 class MochaTestLanguageServer extends TestLanguageServer {
     //TODO implement a way to join test cases everytime we run the on discovery
@@ -31,6 +52,23 @@ class MochaTestLanguageServer extends TestLanguageServer {
 
     }
 
+    public getProviderSettings(): MochaProviderSettings {
+        if (this.initializeParams && this.initializeParams.settings) {
+            return this.initializeParams.settings
+        }
+
+        //return the default configuration
+        return {
+            glob: "src/**/*.test.js",
+            opts: "test/mocha.opts",
+            mochaPath: null,
+        }
+    }
+
+    private resolveMochaPath() {
+        return "C:\\TFS\\SW\\mSeries\\7.0\\MobileApps\\node_modules\\mocha";
+    }
+
     /**
      * Register the testLanguageServer listeners
      */
@@ -45,10 +83,12 @@ class MochaTestLanguageServer extends TestLanguageServer {
                     .then((client) => {
                         const dictFileGrep = groupTestByFile(params.testCases);
 
+                        const optsPath = path.join(this.initializeParams.rootPath, this.getProviderSettings().opts)
+
                         client.initialize({
                             filesDict: dictFileGrep,
-                            mochaPath: "C:\\TFS\\SW\\mSeries\\7.0\\MobileApps\\node_modules\\mocha\\bin\\_mocha",
-                            mochaArguments: { optsPath: this.initializeParams.optsPath }
+                            mochaPath: this.resolveMochaPath(),
+                            mochaArguments: { optsPath }
                         }).then(() => {
                             console.log("response from initlize");
 
@@ -71,16 +111,19 @@ class MochaTestLanguageServer extends TestLanguageServer {
         });
 
         this.connection.onDiscoveryTestCases((params: DiscoveryTestCasesParams): DiscoveryTestCasesResult => {
-            const discoveryTestCases = new Array<TestCase>();
-            params.filePaths.forEach((path) => {
-                discoveryTestCases.push(...MochaTestFinder.findTestCases(path));
+            this.testCases = new Array<TestCase>();
+            const testFilesPath = getAllTestFilesInDirectory(params.directory, this.getProviderSettings().glob);
+            testFilesPath.forEach((filePath) => {
+                const discoveryTestCases = new Array<TestCase>();
+                discoveryTestCases.push(...MochaTestFinder.findTestCases(PathUtils.normalizePath(filePath)));
+                this.findDuplicatesTestCases(discoveryTestCases);
                 this.testCases.push(...discoveryTestCases);
             })
 
-            this.findDuplicatesTestCases(discoveryTestCases);
+            
 
             return {
-                testCases: discoveryTestCases
+                testCases: this.testCases
             }
         });
 
@@ -188,6 +231,9 @@ class MochaTestLanguageServer extends TestLanguageServer {
                     break;
             }
         }
+        else {
+            console.log("something might gone wrong with test case null");
+        }
 
         return testCase;
     }
@@ -198,9 +244,9 @@ class MochaTestLanguageServer extends TestLanguageServer {
      * @param fullTitle 
      * @param path 
      */
-    private findTestCaseByFullTitleAndPath(testCases: Array<TestCase>, fullTitle: string, path: string) {
+    private findTestCaseByFullTitleAndPath(testCases: Array<TestCase>, fullTitle: string, filePath: string) {
         const filtered = testCases.filter((testCase) => {
-            return testCase.fullTitle === fullTitle && testCase.path === path;
+            return testCase.fullTitle === fullTitle && testCase.path === PathUtils.normalizePath(filePath);
         });
         return filtered != null && filtered[0];
     }
@@ -238,7 +284,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
  * Calculate the grep of a test case
  * @return the grep
  */
-function calculateGrep(testCase: TestCase) : string {
+function calculateGrep(testCase: TestCase): string {
     if (testCase.parendId == null) {
         //when there is no parentId we are sending the entire file to test
         return null;

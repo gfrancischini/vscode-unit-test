@@ -12,9 +12,13 @@ export interface InitializeParams {
 	 * The rootPath of the workspace. Is null
 	 * if no folder is open.
 	 *
-	 * @deprecated in favour of rootUri.
 	 */
-	rootPath?: string | null;
+	rootPath: string | null;
+
+	/** 
+	 * Object with the provider required settings read from vscode.settings
+	 */
+	settings : any;
 	
 	/**
 	 * Custom initialization arguments request.

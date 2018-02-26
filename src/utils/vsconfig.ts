@@ -14,14 +14,13 @@ export function isAutoInitializeEnabled(): boolean {
     return true;
 }
 
-export function getMochaGlob(): string {
-    const configuration  = vscode.workspace.getConfiguration(`mocha`);
-    const value = configuration.get("glob");
-    return <string>value;
+export function getTestProviderSettings(testProviderName : string): vscode.WorkspaceConfiguration {
+    const configuration  = vscode.workspace.getConfiguration(testProviderName);
+    return configuration;
 }
 
-export function getMochaOptsPath(): string {
-    const configuration  = vscode.workspace.getConfiguration(`mocha`);
-    const value = configuration.get("opts");
+export function getCurrentTestProviderName(scope : vscode.Uri) {
+    const configuration  = vscode.workspace.getConfiguration(`unit.test`, scope);
+    const value = configuration.get("provider");
     return <string>value;
 }

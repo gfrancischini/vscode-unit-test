@@ -31,7 +31,7 @@ mochaRunnerServer.getConnection().onRun(async (params: RunParams) => {
  * @param filesDict 
  */
 async function run(_mochaPath : string, optsPath : string, filesDict: {}) {
-    Mocha = require(path.join(_mochaPath, '../', '../'));
+    Mocha = require(_mochaPath);
     const opts = optsPath ? getOptions(optsPath) : null;
 
     for (let path in filesDict) {

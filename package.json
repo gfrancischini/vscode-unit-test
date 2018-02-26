@@ -2,7 +2,7 @@
     "name": "vscode-unit-test",
     "displayName": "Unit Test Explorer",
     "description": "Unit Test IDE for vscode",
-    "version": "0.0.5",
+    "version": "0.1.0",
     "publisher": "gfrancischini",
     "icon": "resources/icon/testingicon.png",
     "repository": {
@@ -60,6 +60,10 @@
             {
                 "command": "unit.test.explorer.initialize",
                 "title": "Initialize Test Explorer"
+            },
+            {
+                "command": "unit.test.explorer.restart",
+                "title": "Restart Test Explorer"
             }
         ],
         "views": {
@@ -104,15 +108,10 @@
             "type": "object",
             "title": "Unit Test Configuration",
             "properties": {
-                "mocha.glob": {
+                "unit.test.provider": {
                     "type": "string",
-                    "default": "src/**/*.test.js",
-                    "description": "Mocha Glob pattern used to find test files"
-                },
-                "mocha.opts": {
-                    "type": "string",
-                    "default": "mocha.opts",
-                    "description": "Mocha Opts Path Relative path to the workspace"
+                    "default": "mocha",
+                    "description": "Define the current provider used for this workspace"
                 }
             }
         }

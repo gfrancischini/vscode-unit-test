@@ -4,7 +4,7 @@ import * as path from "path";
 import * as fs from "fs";
 
 
-export function startServer(cwd: string) {
+export function startServer(cwd: string) : cp.ChildProcess {
     const modulePath: string = path.join(path.dirname(module.filename), "..", "mochaTestLanguageServer", "mochaTestLanguageServer.js");
 
     const forkArgs: Array<any> = [];
@@ -12,8 +12,6 @@ export function startServer(cwd: string) {
 
     //uncoment this line for process debug
     //spawnArgs.push("--inspect-brk=127.0.0.1:9220");
-
-    //this line is used for allowing test debug
     spawnArgs.push("--inspect=127.0.0.1:9220");
 
     //add the module file path as a arg

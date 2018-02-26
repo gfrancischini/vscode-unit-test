@@ -3,6 +3,8 @@ import * as fs from "fs-extra";
 import * as path from "path";
 import { MochaTestCase, SuiteItem, DescribeItem, ItItem } from "./MochaTestCase";
 import { TestCase } from "../../testLanguage/protocol";
+import { PathUtils } from "../../utils/path"
+
 export class MochaTestFinder {
     
     /**
@@ -18,7 +20,7 @@ export class MochaTestFinder {
         const testCase = new TestCase();
         testCase.line = 0;
 
-        testCase.path = sourceFile.fileName;
+        testCase.path = PathUtils.normalizePath(sourceFile.fileName);
         testCase.title = path.basename(sourceFile.fileName);
         testCase.fullTitle = "";
         testCase.isTestCase = false;
@@ -64,7 +66,7 @@ export class MochaTestFinder {
                         result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
                         //result.setChildren(children);
                         result.parendId = parent != null && parent.id;
-                        result.path = sourceFile.fileName;
+                        result.path = PathUtils.normalizePath(sourceFile.fileName);
 
                         result.code = `${result.title}${result.path}`
                         let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result, testCases);
@@ -92,7 +94,7 @@ export class MochaTestFinder {
                         result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
                         //result.setChildren(children);
                         result.parendId = parent != null && parent.id;
-                        result.path = sourceFile.fileName;
+                        result.path = PathUtils.normalizePath(sourceFile.fileName);
                         result.code = `${result.title}${result.path}`
                         result.isTestCase = false;
                         let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result, testCases);
@@ -118,7 +120,7 @@ export class MochaTestFinder {
                         result.title = MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases);
                         const parentTitle = parent != null ? parent.fullTitle : null;
                         result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
-                        result.path = sourceFile.fileName;
+                        result.path = PathUtils.normalizePath(sourceFile.fileName);
                         result.parendId = parent != null && parent.id;
                         result.code = `${result.title}${result.path}`
                         result.hasChildren = false;

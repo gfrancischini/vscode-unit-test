@@ -2,11 +2,12 @@ import * as vscode from "vscode";
 import { TestCase, TestCaseStatus } from "../testLanguage/protocol"
 import { TreeLabel } from "./treeLabel"
 import { GroupByProvider } from "./groupByProvider"
-import { isExtensionEnabled, isAutoInitializeEnabled, getCurrentTestProviderName } from "../utils/vsconfig"
+import { isExtensionEnabled, isAutoInitializeEnabled, getCurrentTestProviderName, getTestProviderSettings } from "../utils/vsconfig"
 import { getImageResource } from "../utils/image"
 import { TestTreeLanguageClient } from "./testTreeLanguageClient"
 import * as Collections from "typescript-collections";
 import { TestTreeType } from "./treeType"
+
 
 /**
  * Register the test tree explorer
@@ -62,22 +63,36 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * 
      */
     constructor(private context: vscode.ExtensionContext) {
-        this.readSettings(vscode.workspace.workspaceFolders[0].uri);
-
         //todo: bug here when there is more than one workspace folders
         this.rootDir = vscode.workspace.workspaceFolders[0].uri.fsPath;
-        this.testLanguageClient = new TestTreeLanguageClient(this.rootDir);
-        this.testLanguageClient.initialize().then((version) => {
-            this.registerCommands(context);
+        
+        this.initializeLanguageClient();
+
+        this.registerServerCommands(context);
+
+        this.registerBasicCommands(context);
+    }
+
+    private initializeLanguageClient() {
+        const providerSettings = this.readSettings(vscode.workspace.workspaceFolders[0].uri);
+
+        this.testLanguageClient = new TestTreeLanguageClient(this.rootDir, providerSettings);
+        this.testLanguageClient.initialize().then((initalizeResult) => {
+            console.log("initalizeResult: " + JSON.stringify(initalizeResult));          
 
             this.registerTestServiceListeners();
 
             this.discoveryTests();
         });
+
     }
 
-    private readSettings(scope : vscode.Uri) {
+    private readSettings(scope: vscode.Uri) {
         const currentProviderName = getCurrentTestProviderName(scope);
+
+        const configurations = getTestProviderSettings(currentProviderName);
+
+        return configurations;
     }
 
     /**
@@ -275,11 +290,23 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         }
     }
 
+    private registerBasicCommands(context: vscode.ExtensionContext) {
+        //register the refresh explorer command
+        const refreshExplorerCommand = vscode.commands.registerCommand("unit.test.explorer.refresh",
+            () => this.discoveryTests());
+        context.subscriptions.push(refreshExplorerCommand);
+
+        //register the refresh explorer command
+        const restartExplorerCommand = vscode.commands.registerCommand("unit.test.explorer.restart",
+            () => this.onCommandRestartServer());
+        context.subscriptions.push(restartExplorerCommand);
+    }
+
     /**
      * Register test explorer commands
      * @param context 
      */
-    private registerCommands(context: vscode.ExtensionContext) {
+    private registerServerCommands(context: vscode.ExtensionContext) {
 
         //register the go to test location command
         const goToTestLocationCommand = vscode.commands.registerCommand("unit.test.explorer.open",
@@ -290,11 +317,6 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         const groupByExplorerCommand = vscode.commands.registerCommand("unit.test.explorer.groupBy",
             () => this.onCommandGroupBy());
         context.subscriptions.push(groupByExplorerCommand);
-
-        //register the refresh explorer command
-        const refreshExplorerCommand = vscode.commands.registerCommand("unit.test.explorer.refresh",
-            () => this.discoveryTests());
-        context.subscriptions.push(refreshExplorerCommand);
 
         //register the run selected test command
         const runTestCommand = vscode.commands.registerCommand("unit.test.execution.runSelected",
@@ -316,6 +338,12 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             () => this.onCommandRunAllTests());
         context.subscriptions.push(runAllTestCommand);
 
+    }
+
+    private onCommandRestartServer() {
+        this.testLanguageClient.stopServer();
+
+        this.initializeLanguageClient();
     }
 
     /**

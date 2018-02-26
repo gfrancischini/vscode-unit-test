@@ -1,5 +1,6 @@
 import { mochaRunnerServer } from "./serverInstance"
 import { TestSuite, TestSuiteUpdateType, TestSuiteUpdateParams } from "./protocol"
+import * as Mocha from "mocha"
 
 /**
  * Get the full title from a item
@@ -42,8 +43,8 @@ function toTestSuite(item, err = null): TestSuite {
    * @param options Mocha Option
    */
 export async function MochaCustomReporter(runner: any, options: { files: Array<string>, reporterOptions: any }) {
-    (<any>mocha).reporters.Base.call(this, runner);
-
+    Mocha.reporters.Base.call(this, runner);
+    
     let currentFilePath = options.files[0];
     runner
         .on("start", () => {
