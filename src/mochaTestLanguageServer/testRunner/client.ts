@@ -7,7 +7,6 @@ import { startMochaRunnerServer } from "./mochaCaller"
 import * as fs from "fs"
 import * as cp from "child_process";
 import * as net from "net";
-import * as portfinder from "portfinder"
 
 export interface IConnection {
     listen(): void;
@@ -44,30 +43,37 @@ export class MochaRunnerClient {
         return result;
     }
 
-    public connectClient(cwd): Promise<IConnection> {
+    /**
+     * Open a server connection and wait for the client to connect
+     */
+    public connectClient(cwd: string, port: number, startServer: boolean = true): Promise<IConnection> {
 
         return new Promise<IConnection>((resolve, reject) => {
-            portfinder.getPort({ port: 10000 }, (err, port) => {
-                console.log(`starting server on port = ${this.port}`);
-                this.port = port;
-                createClientSocketTransport(this.port).then((transport) => {
-                    this.startServer(cwd, port)
+            console.log(`starting server on port = ${this.port}`);
+            this.port = port;
+            createClientSocketTransport(this.port).then((transport) => {
+                if (startServer) {
+                    this.startChildProcess(cwd, port)
                         .then((value) => {
 
                         });
+                }
 
-                    transport.onConnected().then((protocol) => {
-                        this.connection = this.createConnection(protocol[0], protocol[1]);
-                        this.connection.listen();
-                        resolve(this.connection);
-                    });
+                transport.onConnected().then((protocol) => {
+                    this.connection = this.createConnection(protocol[0], protocol[1]);
+                    this.connection.listen();
+                    resolve(this.connection);
                 });
             });
-
         });
     }
 
-    public startServer(cwd, port): Promise<boolean> {
+    /**
+     * Start a child process that will be our client?
+     * @param cwd 
+     * @param port 
+     */
+    public startChildProcess(cwd : string, port : number): Promise<boolean> {
         const mochaArgs = new Array<string>();
         this.childProcess = startMochaRunnerServer(cwd, port);
 
@@ -79,7 +85,10 @@ export class MochaRunnerClient {
         });
     }
 
-    public stopServer() {
+    /**
+     * Kill the child process
+     */
+    public stopChildProcess() {
         if (this.childProcess != null) {
             this.childProcess.kill("SIGINT");
         }

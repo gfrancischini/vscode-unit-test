@@ -266,13 +266,14 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
 
     /**
      * Command for run all test cases
+     * @param If debugging is enabled
      */
-    private onCommandRunAllTests() {
+    private onCommandRunAllTests(debug : boolean = false) {
         const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
             return testCase.parendId == null;
         })
 
-        this.testLanguageClient.runTests(filtered);
+        this.testLanguageClient.runTests(filtered, debug);
     }
 
     /**
@@ -335,7 +336,12 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
 
         //register the run all test cases command
         const runAllTestCommand = vscode.commands.registerCommand("unit.test.execution.runAll",
-            () => this.onCommandRunAllTests());
+            () => this.onCommandRunAllTests(false));
+        context.subscriptions.push(runAllTestCommand);
+
+        //register the run all test cases command
+        const debugAllTestCommand = vscode.commands.registerCommand("unit.test.execution.debugAll",
+            () => this.onCommandRunAllTests(true));
         context.subscriptions.push(runAllTestCommand);
 
     }

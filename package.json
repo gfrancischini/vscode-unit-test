@@ -37,6 +37,11 @@
                 "icon": "resources/light/play_all_button.svg"
             },
             {
+                "command": "unit.test.execution.debugAll",
+                "title": "Debug All Tests",
+                "icon": "resources/light/play_all_button.svg"
+            },
+            {
                 "command": "unit.test.execution.stop",
                 "title": "Stop Tests"
             },
@@ -88,6 +93,11 @@
                 },
                 {
                     "command": "unit.test.execution.runAll",
+                    "when": "view == unit.test.explorer.vsTestTree",
+                    "group": "hidden"
+                },
+                {
+                    "command": "unit.test.execution.debugAll",
                     "when": "view == unit.test.explorer.vsTestTree",
                     "group": "hidden"
                 }

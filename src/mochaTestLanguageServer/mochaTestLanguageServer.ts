@@ -1,5 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
+import * as portfinder from "portfinder"
 
 import { StreamMessageReader, SocketMessageWriter } from 'vscode-jsonrpc';
 import {
@@ -14,6 +15,7 @@ import { MochaRunnerClient } from "./testRunner/client"
 import { TestSuite, TestSuiteUpdateParams, TestSuiteUpdateType } from "./testRunner/protocol"
 import { getAllTestFilesInDirectory } from '../utils/directory'
 import { PathUtils } from "../utils/path"
+import { getMochaServerPath } from "./testRunner/mochaCaller"
 
 interface MochaProviderSettings {
     /** 
@@ -66,19 +68,19 @@ class MochaTestLanguageServer extends TestLanguageServer {
         }
     }
 
-    private isMochaAvailable(path : string) : boolean{
-        if(fs.existsSync(path)) {
+    private isMochaAvailable(path: string): boolean {
+        if (fs.existsSync(path)) {
             console.log("using mocha from= " + path);
             return true;
         }
     }
 
     private resolveMochaPath() {
-        if(this.getProviderSettings().mochaPath && this.isMochaAvailable(this.getProviderSettings().mochaPath)) {
+        if (this.getProviderSettings().mochaPath && this.isMochaAvailable(this.getProviderSettings().mochaPath)) {
             return this.getProviderSettings().mochaPath
         }
         const mochaNodeModulesPath = path.join(this.initializeParams.rootPath, "node_modules", "mocha");
-        if(this.isMochaAvailable(mochaNodeModulesPath)) {
+        if (this.isMochaAvailable(mochaNodeModulesPath)) {
             return mochaNodeModulesPath;
         }
         //return "C:\\TFS\\SW\\mSeries\\7.0\\MobileApps\\node_modules\\mocha";
@@ -96,8 +98,12 @@ class MochaTestLanguageServer extends TestLanguageServer {
             this.mochaRunnerClient = new MochaRunnerClient(12345);
             this.currentTestSession.sesssionId = params.sessionId;
             return new Promise((resolve, reject) => {
-                this.mochaRunnerClient.connectClient(this.initializeParams.rootPath)
-                    .then((client) => {
+                portfinder.getPortPromise({ port: 10000 }).then((port) => {
+                    if (params.debug) {
+                        this.sendDebugInformation(port);
+                    }
+
+                    this.mochaRunnerClient.connectClient(this.initializeParams.rootPath, port, !params.debug).then((client) => {
                         const dictFileGrep = groupTestByFile(params.testCases);
 
                         const optsPath = path.join(this.initializeParams.rootPath, this.getProviderSettings().opts);
@@ -110,7 +116,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
                             console.log("response from initlize");
 
                             //kill the process
-                            this.mochaRunnerClient.stopServer();
+                            this.mochaRunnerClient.stopChildProcess();
 
                             resolve({
                                 "test": "ok"
@@ -124,6 +130,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
                             }
                         });
                     });
+                });
             });
         });
 
@@ -132,7 +139,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
             const testFilesPath = getAllTestFilesInDirectory(params.directory, this.getProviderSettings().glob);
             testFilesPath.forEach((filePath, i) => {
                 this.getConnection().dataOutput({
-                    data : `Discovering test for file ${filePath} - ${i+1}/${testFilesPath.length}`
+                    data: `Discovering test for file ${filePath} - ${i + 1}/${testFilesPath.length}`
                 })
                 const discoveryTestCases = new Array<TestCase>();
                 discoveryTestCases.push(...MochaTestFinder.findTestCases(PathUtils.normalizePath(filePath)));
@@ -140,7 +147,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
                 this.testCases.push(...discoveryTestCases);
             })
 
-            
+
 
             return {
                 testCases: this.testCases
@@ -149,6 +156,28 @@ class MochaTestLanguageServer extends TestLanguageServer {
 
     }
 
+    /**
+     * Send the debug information for the test language client
+     * @param port The port to communicate with the mocha runner
+     */
+    private sendDebugInformation(port: number) {
+        const vscodeDebuggerOpts = {
+            "name": "Mocha Tests",
+            "type": "node",
+            "request": "launch",
+            "stopOnEntry": false,
+            "cwd": this.initializeParams.rootPath,
+            "program": getMochaServerPath(),
+            "runtimeExecutable": null,
+            "args": [
+                `--port=${port}`,
+            ],
+        };
+
+        this.getConnection().debugInformation({
+            data: vscodeDebuggerOpts
+        });
+    }
 
     /**
      * Find all duplicate test cases and log the information
