@@ -128,11 +128,12 @@ function createMocha(filePath: string, grep: string, opts?): Mocha {
 }
 
 /**
+ * //TODO check how this is perfomed by _mocha.js
  * Require the files
  * @param id 
  */
 function managedRequire(id: string) {
-    if (path.isAbsolute(id) === false && !path.extname) {
+    if (path.isAbsolute(id) === false && !path.extname(id)) {
         //when the path is not absolute we should try to load it from node_modules folder
         id = path.join(process.cwd(), "node_modules", id);
     }

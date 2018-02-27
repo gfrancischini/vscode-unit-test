@@ -77,8 +77,11 @@ Calling out known issues can help limit users opening duplicate issues against y
 
 ## Release Notes
 
+### 0.2.2
+Fix bug for running typescript tests
+
 ### 0.2.1
-Fix bug when  retrieving the default settings of the mocha provider
+Fix bug when retrieving the default settings of the mocha provider
 
 ### 0.2.0
 Improve debug protocol

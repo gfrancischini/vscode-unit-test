@@ -166,8 +166,6 @@ class MochaTestLanguageServer extends TestLanguageServer {
                 this.testCases.push(...discoveryTestCases);
             })
 
-
-
             return {
                 testCases: this.testCases
             }
