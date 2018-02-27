@@ -44,7 +44,7 @@ export class TestLanguageServer {
         return result;
     }
 
-    public registerListeners() {
+    protected registerListeners() {
         this.connection.onInitialize((params: InitializeParams): InitializeResult => {
             this.initializeParams = params;
             return {

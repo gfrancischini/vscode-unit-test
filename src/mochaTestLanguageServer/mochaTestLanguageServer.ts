@@ -17,7 +17,7 @@ import { getAllTestFilesInDirectory } from '../utils/directory'
 import { PathUtils } from "../utils/path"
 import { getMochaServerPath } from "./testRunner/mochaCaller"
 
-interface MochaProviderSettings {
+export interface MochaProviderSettings {
     /** 
      * Mocha Glob pattern used to find test files
      */
@@ -35,7 +35,7 @@ interface MochaProviderSettings {
 }
 
 
-class MochaTestLanguageServer extends TestLanguageServer {
+export class MochaTestLanguageServer extends TestLanguageServer {
     //TODO implement a way to join test cases everytime we run the on discovery
     protected testCases: Array<TestCase> = new Array<TestCase>();
 
@@ -80,14 +80,14 @@ class MochaTestLanguageServer extends TestLanguageServer {
         return this.initializeParams.settings;
     }
 
-    private isMochaAvailable(path: string): boolean {
+    protected isMochaAvailable(path: string): boolean {
         if (fs.existsSync(path)) {
             console.log("using mocha from= " + path);
             return true;
         }
     }
 
-    private resolveMochaPath() {
+    protected resolveMochaPath() {
         if (this.getProviderSettings().mochaPath) {
             if (this.isMochaAvailable(this.getProviderSettings().mochaPath)) {
                 return this.getProviderSettings().mochaPath;
@@ -108,7 +108,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
     /**
      * Register the testLanguageServer listeners
      */
-    public registerListeners() {
+    protected registerListeners() {
         super.registerListeners();
 
         this.connection.onRunTestCases((params: RunTestCasesParams) => {
@@ -177,7 +177,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
      * Send the debug information for the test language client
      * @param port The port to communicate with the mocha runner
      */
-    private sendDebugInformation(port: number) {
+    protected sendDebugInformation(port: number) {
         const vscodeDebuggerOpts = {
             "name": "Mocha Tests",
             "type": "node",
@@ -200,7 +200,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
      * Find all duplicate test cases and log the information
      * @param testCases
      */
-    private findDuplicatesTestCases(testCases: Array<TestCase>) {
+    protected findDuplicatesTestCases(testCases: Array<TestCase>) {
         const fullTitles = testCases.map((testCase) => { return testCase.fullTitle });
 
         const count = fullTitles =>
@@ -227,7 +227,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
      * @param type 
      * @param testSuite 
      */
-    private convertTestSuiteToTestCase(type: TestSuiteUpdateType, testSuite: TestSuite): TestCase {
+    protected convertTestSuiteToTestCase(type: TestSuiteUpdateType, testSuite: TestSuite): TestCase {
         const testCase: TestCase = this.findTestCaseByFullTitleAndPath(this.testCases, testSuite.fullTitle, testSuite.path);
         const sessionId = this.currentTestSession.sesssionId;
         if (testCase) {
@@ -310,7 +310,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
      * @param fullTitle 
      * @param path 
      */
-    private findTestCaseByFullTitleAndPath(testCases: Array<TestCase>, fullTitle: string, filePath: string) {
+    protected findTestCaseByFullTitleAndPath(testCases: Array<TestCase>, fullTitle: string, filePath: string) {
         const filtered = testCases.filter((testCase) => {
             return testCase.fullTitle === fullTitle && testCase.path === PathUtils.normalizePath(filePath);
         });
@@ -322,7 +322,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
      * @param testCases 
      * @param parentTestCase 
      */
-    private markEveryChildWithParentError(testCases: Array<TestCase>, parentTestCase: TestCase) {
+    protected markEveryChildWithParentError(testCases: Array<TestCase>, parentTestCase: TestCase) {
         const filtered = testCases.filter((testCase) => {
             return testCase.parentId === parentTestCase.id;
         })
