@@ -120,9 +120,11 @@ class MochaTestLanguageServer extends TestLanguageServer {
                         }).then(() => {
                             console.log("response from initlize");
 
-                            //kill the process
-                            this.mochaRunnerClient.stopChildProcess();
-
+                            if(params.debug) {
+                                //kill the process
+                                this.mochaRunnerClient.stopChildProcess();
+                            }
+                            
                             resolve({
                                 "test": "ok"
                             })

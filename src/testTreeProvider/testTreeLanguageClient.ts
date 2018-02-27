@@ -188,6 +188,11 @@ export class TestTreeLanguageClient extends TestLanguageClient {
                         debug: debuggingEnabled
                     }).then((result: RunTestCasesResult) => {
                         this._onDidTestCaseChanged.fire();
+
+                        if(debuggingEnabled) {
+                            vscode.commands.executeCommand("workbench.action.debug.stop");
+                        }
+
                         this.testOutputChannel.appendLine("End of test running");
                         return resolve(null);
                     });
