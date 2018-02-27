@@ -27,12 +27,12 @@ export class TestCaseCollection {
 
         this.testCasesDictionary = new Collections.Dictionary<string, TestCase>();
 
-        testCasesMissing.forEach(test => {
+        /*testCasesMissing.forEach(test => {
             while (test.parent != null) {
                 test = test.parent;
             }
             this.push(test);
-        });
+        });*/
     }
 
     public push(testCase: TestCase) {
@@ -58,7 +58,7 @@ export class TestCaseCollection {
         const testCases: Array<TestCase> = new Array<TestCase>();
 
         const filtered = this.testCasesDictionary.values().filter((testCase) => {
-            return testCase.parendId === parentId;
+            return testCase.parentId === parentId;
         })
 
         testCases.push(...filtered);

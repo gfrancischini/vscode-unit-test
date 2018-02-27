@@ -324,7 +324,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
      */
     private markEveryChildWithParentError(testCases: Array<TestCase>, parentTestCase: TestCase) {
         const filtered = testCases.filter((testCase) => {
-            return testCase.parendId === parentTestCase.id;
+            return testCase.parentId === parentTestCase.id;
         })
 
         filtered.forEach((testCase) => {
@@ -351,7 +351,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
  * @return the grep
  */
 function calculateGrep(testCase: TestCase): string {
-    if (testCase.parendId == null) {
+    if (testCase.parentId == null) {
         //when there is no parentId we are sending the entire file to test
         return null;
     }

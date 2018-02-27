@@ -1,15 +1,16 @@
 import * as ts from "typescript";
 import * as fs from "fs-extra";
 import * as path from "path";
-import { MochaTestCase, SuiteItem, DescribeItem, ItItem } from "./MochaTestCase";
+import { MochaTestCase, SuiteItem, DescribeItem, ItItem, TestItem } from "./MochaTestCase";
 import { TestCase } from "../../testLanguage/protocol";
 import { PathUtils } from "../../utils/path"
 
 export class MochaTestFinder {
-    
+
     /**
      * Find test cases in the given file
-     * @param filePath File path to search for test cases
+     * @param filePath File path to search for test cases. The filepath must be a filed system path
+     * otherwise a exception will be thrown.
      * @return Array of found test cases
      */
     public static findTestCases(filePath: string): Array<TestCase> {
@@ -42,7 +43,7 @@ export class MochaTestFinder {
     /**
      * Visit source file nodes to find mocha tests
      */
-    private static visit(sourceFile: ts.SourceFile, node: ts.Node, parent: TestCase, testCases : Array<TestCase>): any {
+    private static visit(sourceFile: ts.SourceFile, node: ts.Node, parent: TestCase, testCases: Array<TestCase>): any {
         switch (node.kind) {
             case ts.SyntaxKind.ExpressionStatement: {
                 const obj: ts.ExpressionStatement = node as ts.ExpressionStatement;
@@ -65,7 +66,7 @@ export class MochaTestFinder {
                         const parentTitle = parent != null ? parent.fullTitle : null;
                         result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
                         //result.setChildren(children);
-                        result.parendId = parent != null && parent.id;
+                        result.parentId = parent != null && parent.id;
                         result.path = PathUtils.normalizePath(sourceFile.fileName);
 
                         result.code = `${result.title}${result.path}`
@@ -93,7 +94,7 @@ export class MochaTestFinder {
                         const parentTitle = parent != null ? parent.fullTitle : null;
                         result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
                         //result.setChildren(children);
-                        result.parendId = parent != null && parent.id;
+                        result.parentId = parent != null && parent.id;
                         result.path = PathUtils.normalizePath(sourceFile.fileName);
                         result.code = `${result.title}${result.path}`
                         result.isTestCase = false;
@@ -103,13 +104,30 @@ export class MochaTestFinder {
                         }
 
                         result.hasChildren = children.length > 0;
-                        
+
 
                         testCases.push(result);
 
                         return result;
                     }
 
+                    case "test":
+                    case "test.skip":
+                        const pos: number = sourceFile.text.lastIndexOf("test", obj.arguments[0].pos);
+
+                        let result: TestItem = new TestItem();
+                        result.line = sourceFile.getLineAndCharacterOfPosition(pos).line;
+
+                        result.title = MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases);
+                        const parentTitle = parent != null ? parent.fullTitle : null;
+                        result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
+                        result.path = PathUtils.normalizePath(sourceFile.fileName);
+                        result.parentId = parent != null && parent.id;
+                        result.code = `${result.title}${result.path}`
+                        result.hasChildren = false;
+                        testCases.push(result);
+
+                        return result;
                     case "it.skip":
                     case "it": {
                         const pos: number = sourceFile.text.lastIndexOf("it", obj.arguments[0].pos);
@@ -121,7 +139,7 @@ export class MochaTestFinder {
                         const parentTitle = parent != null ? parent.fullTitle : null;
                         result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
                         result.path = PathUtils.normalizePath(sourceFile.fileName);
-                        result.parendId = parent != null && parent.id;
+                        result.parentId = parent != null && parent.id;
                         result.code = `${result.title}${result.path}`
                         result.hasChildren = false;
                         testCases.push(result);

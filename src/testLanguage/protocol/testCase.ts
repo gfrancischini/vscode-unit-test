@@ -38,19 +38,9 @@ export class TestCase {
     public path: string;
 
     /**
-     * The path of the compiled filed.
-     */
-    public outputPath: string;
-
-    /**
      * The title (name) of the test.
      */
     public title: string;
-
-    /**
-     * The parent test or file
-     */
-    public parent: TestCase;
 
     /**
      * Line where this test is found
@@ -70,7 +60,7 @@ export class TestCase {
     /**
      * The parent id of this test
      */
-    public parendId: string = null;
+    public parentId: string = null;
 
     /**
      * If this is a test or only a grouper

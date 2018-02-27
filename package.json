@@ -138,7 +138,8 @@
         "@types/node": "^7.0.43",
         "@types/mocha": "^2.2.42",
         "@types/chai": "^4.1.2",
-        "chai": "^4.1.2"
+        "chai": "^4.1.2",
+        "ts-node": "^5.0.0"
     },
     "dependencies": {
         "amd-loader": "0.0.8",

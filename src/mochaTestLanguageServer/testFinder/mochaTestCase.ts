@@ -18,6 +18,13 @@ export class DescribeItem extends MochaTestCase {
     }
 }
 
+export class TestItem extends MochaTestCase {
+    constructor() {
+        super();
+        this.type = "test";
+    }
+}
+
 export class ItItem extends MochaTestCase {
     constructor() {
         super();
@@ -25,4 +32,4 @@ export class ItItem extends MochaTestCase {
     }
 }
 
-type Item = SuiteItem | DescribeItem | ItItem;
+type Item = SuiteItem | DescribeItem | ItItem | TestItem;

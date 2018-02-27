@@ -113,7 +113,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
                 return Promise.resolve(item.getChildren() ? item.getChildren() : []);
             }
             const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
-                return testCase.parendId === item.id;
+                return testCase.parentId === item.id;
             });
             return Promise.resolve(filtered);
         }
@@ -270,7 +270,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      */
     private onCommandRunAllTests(debug : boolean = false) {
         const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
-            return testCase.parendId == null;
+            return testCase.parentId == null;
         })
 
         this.testLanguageClient.runTests(filtered, debug);

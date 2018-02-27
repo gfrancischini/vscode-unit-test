@@ -18,7 +18,7 @@ export class GroupByFile extends GroupBy {
     public getCategories(testCases: Array<TestCase>): Promise<Array<TestTreeType>> {
         return new Promise<Array<TestTreeType>>((resolve, reject) => {
             const filtered = testCases.filter((testCase) => {
-                return testCase.parendId == null;
+                return testCase.parentId == null;
             })
 
             resolve(filtered);
