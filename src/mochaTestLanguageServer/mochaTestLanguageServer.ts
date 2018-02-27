@@ -76,15 +76,20 @@ class MochaTestLanguageServer extends TestLanguageServer {
     }
 
     private resolveMochaPath() {
-        if (this.getProviderSettings().mochaPath && this.isMochaAvailable(this.getProviderSettings().mochaPath)) {
-            return this.getProviderSettings().mochaPath
+        if (this.getProviderSettings().mochaPath) {
+            if (this.isMochaAvailable(this.getProviderSettings().mochaPath)) {
+                return this.getProviderSettings().mochaPath;
+            }
+            else if (this.isMochaAvailable(path.join(this.initializeParams.rootPath, this.getProviderSettings().mochaPath))) {
+                return path.join(this.initializeParams.rootPath, this.getProviderSettings().mochaPath);
+            }
         }
         const mochaNodeModulesPath = path.join(this.initializeParams.rootPath, "node_modules", "mocha");
         if (this.isMochaAvailable(mochaNodeModulesPath)) {
             return mochaNodeModulesPath;
         }
-        //return "C:\\TFS\\SW\\mSeries\\7.0\\MobileApps\\node_modules\\mocha";
-        // we should return the mocha installed with the extension
+        
+        //TODO we should return the mocha installed with the extension
         return "";
     }
 

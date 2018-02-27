@@ -30,12 +30,12 @@ As you run, write, and rerun your tests, Test Explorer displays the results in d
 * Duration - Tests are grouped by - **Slow**, **Medium** and **Fast**
 * File - Tests are grouped by **File Name**
 
-### Run tests
+### Run tests / Debug Tests
 You can run all the tests in the solution, all the tests in a group, or a set of tests that you select. Do one of the following:
 
-* To run all the tests in a solution, click on the **...** and choose **Run All**.
-* To run a specific test select the test and click on **Run**. You can also right click the test and select **Run Selected Test Case**
-* To run a specific group of test select the test group and click on **Run** You can also right click the test group and select **Run Selected Test Group**
+* To run all the tests in a solution, click on the **...** and choose **Run All** or **Debug All**.
+* To run a specific test right click the test and select **Run Selected Test** or **Debug Selected Test**
+* To run a specific group of test right click the test group and select **Run Selected Test** or **Debug Selected Test**
 
 ### View test results
 
@@ -54,7 +54,7 @@ To display the source code for a test method in the Visual Studio Code editor yo
 
 ## Requirements
 
-NodeJS > 8.6 for Running Mocha Tests
+NodeJS > 6.0 for Running Mocha Tests
 
 ## Extension Settings
 
@@ -67,14 +67,19 @@ This extension contributes the following settings:
 }
 ```
 
-* `glob`: Mocha Glob pattern used to find test files
-* `opts`: Mocha Opts Path Relative path to the workspace
+* `glob`: Optional Mocha Glob pattern used to find test files. By default the extension will use the glob pattern "test/**/*.js"
+* `opts`: Optional Mocha Opts Path Relative path to the workspace. By default the extension will search for mocha.opts under you test directory
+* `mochaPath` : Optional Mocha relative or full path to the installed mocha module. By default the extension will search the node_modules of you project
 
 ## Known Issues
 
 Calling out known issues can help limit users opening duplicate issues against your extension.
 
 ## Release Notes
+
+### 0.2.0
+Improve debug protocol
+Add command Debug All
 
 ### 0.1.0
 Major changes in the protocol to exchange information between server and client

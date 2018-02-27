@@ -12,7 +12,7 @@ export function startServer(cwd: string) : cp.ChildProcess {
 
     //uncoment this line for process debug
     //spawnArgs.push("--inspect-brk=127.0.0.1:9220");
-    spawnArgs.push("--inspect=127.0.0.1:9220");
+    //spawnArgs.push("--inspect=127.0.0.1:9220");
 
     //add the module file path as a arg
     spawnArgs.push(modulePath);
@@ -30,7 +30,6 @@ export function startServer(cwd: string) : cp.ChildProcess {
     childProcess.on("exit", code => {
         console.log("exit: " + code);
     });
-
 
     console.log(`startServer - ${modulePath}`);
 
