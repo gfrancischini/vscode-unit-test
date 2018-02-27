@@ -77,6 +77,9 @@ Calling out known issues can help limit users opening duplicate issues against y
 
 ## Release Notes
 
+### 0.2.1
+Fix bug when  retrieving the default settings of the mocha provider
+
 ### 0.2.0
 Improve debug protocol
 Add command Debug All

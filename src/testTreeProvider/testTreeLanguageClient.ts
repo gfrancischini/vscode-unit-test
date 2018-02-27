@@ -79,7 +79,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
 
         const initializeParams: InitializeParams = {
             rootPath: this.directory,
-            processId: 1,
+            processId: process.pid,
             settings: this.providerSettings
         }
 

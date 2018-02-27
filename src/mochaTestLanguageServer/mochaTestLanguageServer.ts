@@ -56,16 +56,28 @@ class MochaTestLanguageServer extends TestLanguageServer {
     }
 
     public getProviderSettings(): MochaProviderSettings {
-        if (this.initializeParams && this.initializeParams.settings) {
-            return this.initializeParams.settings
+        if (this.initializeParams.settings == null) {
+            //return the default configuration
+            return {
+                glob: "src/**/*.test.js",
+                opts: "test/mocha.opts",
+                mochaPath: null,
+            }
         }
 
-        //return the default configuration
-        return {
-            glob: "src/**/*.test.js",
-            opts: "test/mocha.opts",
-            mochaPath: null,
+        if (!this.initializeParams.settings.glob) {
+            this.initializeParams.settings.glob = "src/**/*.test.js"
         }
+
+        if (!this.initializeParams.settings.opts) {
+            this.initializeParams.settings.opts = "test/mocha.opts"
+        }
+
+        if (!this.initializeParams.settings.mochaPath) {
+            this.initializeParams.settings.mochaPath = null
+        }
+
+        return this.initializeParams.settings;
     }
 
     private isMochaAvailable(path: string): boolean {
@@ -88,7 +100,7 @@ class MochaTestLanguageServer extends TestLanguageServer {
         if (this.isMochaAvailable(mochaNodeModulesPath)) {
             return mochaNodeModulesPath;
         }
-        
+
         //TODO we should return the mocha installed with the extension
         return "";
     }
@@ -120,11 +132,11 @@ class MochaTestLanguageServer extends TestLanguageServer {
                         }).then(() => {
                             console.log("response from initlize");
 
-                            if(params.debug) {
+                            if (params.debug) {
                                 //kill the process
                                 this.mochaRunnerClient.stopChildProcess();
                             }
-                            
+
                             resolve({
                                 "test": "ok"
                             })
