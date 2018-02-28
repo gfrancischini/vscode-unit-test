@@ -15,6 +15,7 @@ import {
     InitializeParams, InitializeResult,
     TestCaseUpdateParams
 } from "../testLanguage/protocol"
+import { RunRequest } from "../mochaTestLanguageServer/testRunner/protocol";
 
 /**   
  * Class responsible for handling the test communication events 
@@ -206,4 +207,11 @@ export class TestTreeLanguageClient extends TestLanguageClient {
     public stopServer() {
         this.serverProcess.kill("SIGINT");
     }
+
+    /** 
+     * Send the command for stop the running tests 
+     */
+    public stopRunningTests() {
+        this.connection.cancelRequest({requestType: RunRequest.type.method});
+    } 
 }

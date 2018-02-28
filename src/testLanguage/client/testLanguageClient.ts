@@ -5,7 +5,8 @@ import {
     RunTestCasesRequest, RunTestCasesParams, RunTestCasesResult, RunTestCasesError,
     TestCaseUpdateNotification, TestCaseUpdateParams, 
     DataOutputNotification, DataOutputParams, 
-    DebugInformationNotification
+    DebugInformationNotification,
+    CancelNotification, CancelParams
 } from "../../testLanguage/protocol"
 import { TestCase, TestCaseStatus } from "../../testLanguage/protocol";
 import * as path from "path";
@@ -19,6 +20,7 @@ export interface IConnection {
     onTestCaseUpdated(handler: any): void;
     onDataOutput(handler: any): void;
     onDebugInformation(handler: any): void;
+    cancelRequest(params: CancelParams) : void;
 }
 
 
@@ -40,6 +42,7 @@ export class TestLanguageClient {
             onTestCaseUpdated: (handler) => msgConnection.onNotification(TestCaseUpdateNotification.type, handler),
             onDataOutput: (handler) => msgConnection.onNotification(DataOutputNotification.type, handler),
             onDebugInformation: (handler) => msgConnection.onNotification(DebugInformationNotification.type, handler),
+            cancelRequest: (params: CancelParams) => msgConnection.sendNotification(CancelNotification.type, params),
         }
 
         return result;

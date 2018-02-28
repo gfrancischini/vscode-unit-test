@@ -339,11 +339,21 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             () => this.onCommandRunAllTests(false));
         context.subscriptions.push(runAllTestCommand);
 
-        //register the run all test cases command
+        //register the debug all test cases command
         const debugAllTestCommand = vscode.commands.registerCommand("unit.test.execution.debugAll",
             () => this.onCommandRunAllTests(true));
-        context.subscriptions.push(runAllTestCommand);
+        context.subscriptions.push(debugAllTestCommand);
 
+        //register the stop test running command
+        const stopTestCommand = vscode.commands.registerCommand("unit.test.execution.stop",
+            () => this.onCommandStopTests());
+        context.subscriptions.push(stopTestCommand);
+        
+
+    }
+
+    private onCommandStopTests() {
+        this.testLanguageClient.stopRunningTests();
     }
 
     private onCommandRestartServer() {

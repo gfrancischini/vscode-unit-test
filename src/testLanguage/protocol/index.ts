@@ -6,4 +6,5 @@ export {RunTestCasesError, RunTestCasesParams, RunTestCasesRequest, RunTestCases
 export {TestCaseUpdateParams, TestCaseUpdateNotification} from "./notification/testCaseUpdateNotification"
 export {DataOutputParams, DataOutputNotification} from "./notification/dataOutputNotification"
 export {DebugInformationNotification, DebugInformationParams} from "./notification/debugInformationNotification"
+export {CancelNotification, CancelParams} from "./notification/cancelNotification"
 

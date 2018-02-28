@@ -4,7 +4,8 @@ import {
     RunTestCasesRequest,DiscoveryTestCasesRequest,
     TestCaseUpdateNotification, TestCaseUpdateParams,
     DataOutputNotification, DataOutputParams,
-    DebugInformationNotification, DebugInformationParams
+    DebugInformationNotification, DebugInformationParams,
+    CancelNotification, CancelParams
 } from "../../testLanguage/protocol"
 import { TestCase, TestCaseStatus } from "../../testLanguage/protocol";
 import * as path from "path";
@@ -13,6 +14,7 @@ export interface IConnection {
     listen(): void;
     onInitialize(handler: any): void;
     onRunTestCases(handler: any): void;
+    onCancel(handler:any) : void;
     onDiscoveryTestCases(handler: any): void;
     testCaseUpdate(params: TestCaseUpdateParams): void;
     dataOutput(params: DataOutputParams): void;
@@ -35,6 +37,7 @@ export class TestLanguageServer {
             listen: (): void => msgConnection.listen(),
             onInitialize: (handler) => msgConnection.onRequest(InitializeRequest.type, handler),
             onRunTestCases: (handler) => msgConnection.onRequest(RunTestCasesRequest.type, handler),
+            onCancel: (handler) => msgConnection.onNotification(CancelNotification.type, handler),
             onDiscoveryTestCases: (handler) => msgConnection.onRequest(DiscoveryTestCasesRequest.type, handler),
             testCaseUpdate: (params: TestCaseUpdateParams) => msgConnection.sendNotification(TestCaseUpdateNotification.type, params),
             dataOutput: (params: DataOutputParams) => msgConnection.sendNotification(DataOutputNotification.type, params),

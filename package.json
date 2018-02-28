@@ -2,7 +2,7 @@
     "name": "vscode-unit-test",
     "displayName": "Unit Test Explorer",
     "description": "Unit Test IDE for vscode",
-    "version": "0.2.2",
+    "version": "0.3.0",
     "publisher": "gfrancischini",
     "icon": "resources/icon/testingicon.png",
     "repository": {
@@ -43,7 +43,7 @@
             },
             {
                 "command": "unit.test.execution.stop",
-                "title": "Stop Tests"
+                "title": "Stop Running Tests"
             },
             {
                 "command": "unit.test.explorer.open",

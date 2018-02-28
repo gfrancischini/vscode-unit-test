@@ -5,7 +5,7 @@ import * as portfinder from "portfinder"
 import { StreamMessageReader, SocketMessageWriter } from 'vscode-jsonrpc';
 import {
     RunTestCasesParams, RunTestCasesResult,
-    DiscoveryTestCasesParams, DiscoveryTestCasesResult
+    DiscoveryTestCasesParams, DiscoveryTestCasesResult, CancelParams
 } from "../testLanguage/protocol"
 import { TestCase, TestCaseStatus } from "../testLanguage/protocol";
 import { escapeRegex } from "../utils/string"
@@ -178,6 +178,11 @@ export class MochaTestLanguageServer extends TestLanguageServer {
             }
         });
 
+        this.connection.onCancel((params : CancelParams) => {
+            // currently we only allow cancelling the run test
+            this.mochaRunnerClient.stopChildProcess();
+        });
+
     }
 
     protected cancelTestsRunning(testCases: Array<TestCase>) {
@@ -300,6 +305,7 @@ export class MochaTestLanguageServer extends TestLanguageServer {
                 case TestSuiteUpdateType.SuiteEnd:
                 case TestSuiteUpdateType.End:
                     testCase.isRunning = false;
+                    testCase.sessionId = sessionId;
                     testCase.endTime = new Date();
                     //testCase.duration = testCase.endTime.getTime() - testCase.startTime.getTime();
 
