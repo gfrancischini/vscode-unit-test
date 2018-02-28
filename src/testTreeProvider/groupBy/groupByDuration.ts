@@ -65,16 +65,16 @@ export class GroupByDuration extends GroupBy {
             const notRunTestsLabel: TreeLabel = new TreeLabel("Not Run Tests", TestCaseStatus.None, this.getNotRunTests(testCases));
             
             // only add filters if there is children to display
-            if (slowTests.getChildrenLenght() > 0) {
+            if (slowTests.children.length > 0) {
                 outcomeArray.push(slowTests);
             }
-            if (mediumTestsLabel.getChildrenLenght() > 0) {
+            if (mediumTestsLabel.children.length > 0) {
                 outcomeArray.push(mediumTestsLabel);
             }
-            if (fastTestsLabel.getChildrenLenght() > 0) {
+            if (fastTestsLabel.children.length > 0) {
                 outcomeArray.push(fastTestsLabel);
             }
-            if (notRunTestsLabel.getChildrenLenght() > 0) {
+            if (notRunTestsLabel.children.length > 0) {
                 outcomeArray.push(notRunTestsLabel);
             }
             

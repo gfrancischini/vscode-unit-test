@@ -10,12 +10,18 @@ import { TestLanguageClient } from "../testLanguage/client/testLanguageClient"
 import { StreamMessageReader, StreamMessageWriter, SocketMessageReader } from 'vscode-jsonrpc';
 import * as cp from 'child_process';
 import * as throttle from "throttle-debounce/throttle";
+import { PathUtils } from "../utils/path"
 
 import {
     InitializeParams, InitializeResult,
-    TestCaseUpdateParams
+    TestCaseUpdateParams, FileChangeType, FileChangeParams
 } from "../testLanguage/protocol"
 import { RunRequest } from "../mochaTestLanguageServer/testRunner/protocol";
+
+/**
+ * Create the test result output channel
+ */
+const testOutputChannel = vscode.window.createOutputChannel('Test');
 
 /**   
  * Class responsible for handling the test communication events 
@@ -46,7 +52,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
     /**
      * Create the test result output channel
      */
-    private testOutputChannel = vscode.window.createOutputChannel('Test');
+    private testOutputChannel = testOutputChannel;
 
     /**
      * vent notification emitted when test case change (new test, update)
@@ -58,7 +64,6 @@ export class TestTreeLanguageClient extends TestLanguageClient {
         this.directory = directory;
         this.providerSettings = providerSettings;
         this._onDidTestCaseChanged = new Emitter<TestCase>();
-        this.watchForWorkspaceFilesChange();
     }
 
     /**
@@ -72,6 +77,8 @@ export class TestTreeLanguageClient extends TestLanguageClient {
      * Initalize the client and start the test server
      */
     public initialize(): Thenable<InitializeResult> {
+        this.testOutputChannel.appendLine(`Starting server`);
+
         this.serverProcess = startServer(this.directory);
 
         //our reader stream comes from fd = 3
@@ -84,7 +91,15 @@ export class TestTreeLanguageClient extends TestLanguageClient {
             settings: this.providerSettings
         }
 
-        return this.connection.initialize(initializeParams);
+        return new Promise((resolve, reject) => {
+            this.connection.initialize(initializeParams).then((result: InitializeResult) => {
+                if (result.watchFilesGlob) {
+                    this.watchForWorkspaceFilesChange(result.watchFilesGlob);
+                }
+                resolve(result);
+            });
+        });
+
     }
 
     /** 
@@ -124,15 +139,40 @@ export class TestTreeLanguageClient extends TestLanguageClient {
         });
     }
 
-    public watchForWorkspaceFilesChange() {
-        /*const test = vscode.workspace.workspaceFolders[0].uri;
-        let pattern = path.join(this.directory, this.globPattern);
-        const fileSystemWatcher = vscode.workspace.createFileSystemWatcher("C:\\Git\\p1-my-reads\\src\\test\\App2.test.js");
-        
-        fileSystemWatcher.onDidChange((listener) => {
-            this.discoveryWorkspaceTests(this.directory);
-        })*/
+    public watchForWorkspaceFilesChange(glob: string) {
+        //const test = vscode.workspace.workspaceFolders[0].uri;
+        //let pattern = path.join(this.directory, this.globPattern);
+        const fileSystemWatcher = vscode.workspace.createFileSystemWatcher(glob);
 
+        fileSystemWatcher.onDidChange((uri: vscode.Uri) => {
+            //this.connection.fileChange({type: FileChangeType.Change, path: PathUtils.normalizePath(uri.fsPath) });
+            const fileChanges = new Array<FileChangeParams>();
+            fileChanges.push({
+                type: FileChangeType.Change,
+                path: PathUtils.normalizePath(uri.fsPath)
+            })
+            this.discoveryWorkspaceTests(null, fileChanges);
+        });
+
+        fileSystemWatcher.onDidCreate((uri: vscode.Uri) => {
+            const fileChanges = new Array<FileChangeParams>();
+            fileChanges.push({
+                type: FileChangeType.Create,
+                path: PathUtils.normalizePath(uri.fsPath)
+            })
+            this.discoveryWorkspaceTests(null, fileChanges);
+            //this.connection.fileChange({type: FileChangeType.Create, path: PathUtils.normalizePath(uri.fsPath) });
+        });
+
+        fileSystemWatcher.onDidDelete((uri: vscode.Uri) => {
+            const fileChanges = new Array<FileChangeParams>();
+            fileChanges.push({
+                type: FileChangeType.Delete,
+                path: PathUtils.normalizePath(uri.fsPath)
+            })
+            this.discoveryWorkspaceTests(null, fileChanges);
+            //this.connection.fileChange({type: FileChangeType.Delete, path: PathUtils.normalizePath(uri.fsPath)h });
+        });
 
     }
 
@@ -140,19 +180,24 @@ export class TestTreeLanguageClient extends TestLanguageClient {
     * Discover the files in the given directory
     * @param directory The directory path do discvery the tests
     */
-    public discoveryWorkspaceTests(directory: string): Promise<Array<TestCase>> {
+    public discoveryWorkspaceTests(directory: string, fileChanges?: Array<FileChangeParams>): Promise<Array<TestCase>> {
         this.testOutputChannel.appendLine("Start test discovery");
+        
         return <Promise<Array<TestCase>>>vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: "Test Adapter" }, progress => {
             this.testOutputChannel.appendLine(`Discovering Tests`);
             return new Promise((resolve, reject) => {
                 return this.connection.discoveryTestCases({
-                    directory: directory
+                    directory: directory,
+                    fileChanges: fileChanges
                 }).then((result: DiscoveryTestCasesResult) => {
+                    this.testCaseCollection.testCasesDictionary.clear();
                     result.testCases.forEach((testCase) => {
                         let convertedTestCase: TestCase = Object.assign(new TestCase(), testCase);
                         this.testCaseCollection.push(convertedTestCase);
                     });
-                    this._onDidTestCaseChanged.fire(result.testCases[0]);
+                    this._onDidTestCaseChanged.fire();
+
+                    this.testOutputChannel.appendLine(`Discovered ${result.testCases.length} tests`);
 
                     //todo: we need to findtest cases and them do the diff between new tests and excluded ones
                     this.testOutputChannel.appendLine("End of test discovery");
@@ -190,7 +235,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
                     }).then((result: RunTestCasesResult) => {
                         this._onDidTestCaseChanged.fire();
 
-                        if(debuggingEnabled) {
+                        if (debuggingEnabled) {
                             vscode.commands.executeCommand("workbench.action.debug.stop");
                         }
 
@@ -205,6 +250,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
      * Stop the server
      */
     public stopServer() {
+        this.testOutputChannel.appendLine(`Killing server`);
         this.serverProcess.kill("SIGINT");
     }
 
@@ -212,6 +258,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
      * Send the command for stop the running tests 
      */
     public stopRunningTests() {
-        this.connection.cancelRequest({requestType: RunRequest.type.method});
-    } 
+        this.testOutputChannel.appendLine(`Cancelling running tests`);
+        this.connection.cancelRequest({ requestType: RunRequest.type.method });
+    }
 }

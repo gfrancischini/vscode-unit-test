@@ -7,18 +7,46 @@ import { PathUtils } from "../../utils/path"
 
 export class MochaTestFinder {
 
+    public static findTestCaseByFullTitle(fullTitle: string, testCases: Array<TestCase>): TestCase {
+        return testCases.filter((testCase) => {
+            return testCase.fullTitle === fullTitle;
+        })[0];
+    }
+
+    public static copyTestCaseResults(newTestCase: TestCase, previousTestCase: TestCase): TestCase {
+        if (previousTestCase) {
+            newTestCase.id = previousTestCase.id;
+            newTestCase.errorMessage = previousTestCase.errorMessage;
+            newTestCase.errorStackTrace = previousTestCase.errorStackTrace;
+            newTestCase.status = previousTestCase.status;
+            newTestCase.startTime = previousTestCase.startTime;
+            newTestCase.endTime = previousTestCase.endTime;
+            newTestCase.sessionId = previousTestCase.sessionId;
+            newTestCase.duration = previousTestCase.duration;
+        }
+        return newTestCase;
+    }
+
+    public static fillTestCase(newTestCase: TestCase, previousFileTestCases: Array<TestCase>): TestCase {
+        const previousTestCase = MochaTestFinder.findTestCaseByFullTitle(newTestCase.fullTitle, previousFileTestCases);
+        if (previousTestCase) {
+            return MochaTestFinder.copyTestCaseResults(newTestCase, previousTestCase);
+        }
+        return newTestCase;
+    }
+
     /**
      * Find test cases in the given file
      * @param filePath File path to search for test cases. The filepath must be a filed system path
      * otherwise a exception will be thrown.
      * @return Array of found test cases
      */
-    public static findTestCases(filePath: string): Array<TestCase> {
+    public static findTestCases(filePath: string, previousFileTestCases: Array<TestCase>): Array<TestCase> {
         const textTestFile: string = fs.readFileSync(filePath).toString();
         const sourceFile: ts.SourceFile = ts.createSourceFile(
             filePath, textTestFile, ts.ScriptTarget.Latest, false, ts.ScriptKind.Unknown);
 
-        const testCase = new TestCase();
+        let testCase = new TestCase();
         testCase.line = 0;
 
         testCase.path = PathUtils.normalizePath(sourceFile.fileName);
@@ -27,11 +55,14 @@ export class MochaTestFinder {
         testCase.isTestCase = false;
         testCase.code = `${testCase.title}${testCase.path}`
         testCase.hasChildren = true;
+
+        testCase = MochaTestFinder.fillTestCase(testCase, previousFileTestCases);
+
         let testCases = new Array<TestCase>();
         testCases.push(testCase);
 
         //return sourceFile.statements.map(statement => MochaTestFinder.visit(sourceFile, statement, null)).filter(o => o);
-        sourceFile.statements.map(statement => MochaTestFinder.visit(sourceFile, statement, testCase, testCases));
+        sourceFile.statements.map(statement => MochaTestFinder.visit(sourceFile, statement, testCase, testCases, previousFileTestCases));
 
         if (testCases.length === 1) {
             testCases = new Array<TestCase>();
@@ -43,26 +74,26 @@ export class MochaTestFinder {
     /**
      * Visit source file nodes to find mocha tests
      */
-    private static visit(sourceFile: ts.SourceFile, node: ts.Node, parent: TestCase, testCases: Array<TestCase>): any {
+    private static visit(sourceFile: ts.SourceFile, node: ts.Node, parent: TestCase, testCases: Array<TestCase>, previousFileTestCases: Array<TestCase>): any {
         switch (node.kind) {
             case ts.SyntaxKind.ExpressionStatement: {
                 const obj: ts.ExpressionStatement = node as ts.ExpressionStatement;
-                return MochaTestFinder.visit(sourceFile, obj.expression, parent, testCases);
+                return MochaTestFinder.visit(sourceFile, obj.expression, parent, testCases, previousFileTestCases);
             }
 
             case ts.SyntaxKind.CallExpression: {
                 const obj: ts.CallExpression = node as ts.CallExpression;
-                const name: string = MochaTestFinder.visit(sourceFile, obj.expression, null, testCases);
+                const name: string = MochaTestFinder.visit(sourceFile, obj.expression, null, testCases, previousFileTestCases);
                 switch (name) {
                     case "suite": {
                         const pos: number = sourceFile.text.lastIndexOf("suite", obj.arguments[0].pos);
 
 
-                        let result: SuiteItem = new SuiteItem();
+                        let result: TestCase = new SuiteItem();
 
                         result.line = sourceFile.getLineAndCharacterOfPosition(pos).line;
 
-                        result.title = MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases);
+                        result.title = MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases, previousFileTestCases);
                         const parentTitle = parent != null ? parent.fullTitle : null;
                         result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
                         //result.setChildren(children);
@@ -70,7 +101,10 @@ export class MochaTestFinder {
                         result.path = PathUtils.normalizePath(sourceFile.fileName);
 
                         result.code = `${result.title}${result.path}`
-                        let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result, testCases);
+
+                        result = MochaTestFinder.fillTestCase(result, previousFileTestCases);
+
+                        let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result, testCases, previousFileTestCases);
                         if (!Array.isArray(children)) {
                             children = [children];
                         }
@@ -87,10 +121,10 @@ export class MochaTestFinder {
                         const pos: number = sourceFile.text.lastIndexOf("describe", obj.arguments[0].pos);
 
 
-                        let result: DescribeItem = new DescribeItem();
+                        let result: TestCase = new DescribeItem();
                         result.line = sourceFile.getLineAndCharacterOfPosition(pos).line;
 
-                        result.title = MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases);
+                        result.title = MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases, previousFileTestCases);
                         const parentTitle = parent != null ? parent.fullTitle : null;
                         result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
                         //result.setChildren(children);
@@ -98,7 +132,10 @@ export class MochaTestFinder {
                         result.path = PathUtils.normalizePath(sourceFile.fileName);
                         result.code = `${result.title}${result.path}`
                         result.isTestCase = false;
-                        let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result, testCases);
+
+                        result = MochaTestFinder.fillTestCase(result, previousFileTestCases);
+
+                        let children: any = MochaTestFinder.visit(sourceFile, obj.arguments[1], result, testCases, previousFileTestCases);
                         if (!Array.isArray(children)) {
                             children = [children];
                         }
@@ -115,16 +152,17 @@ export class MochaTestFinder {
                     case "test.skip":
                         const pos: number = sourceFile.text.lastIndexOf("test", obj.arguments[0].pos);
 
-                        let result: TestItem = new TestItem();
+                        let result: TestCase = new TestItem();
                         result.line = sourceFile.getLineAndCharacterOfPosition(pos).line;
 
-                        result.title = MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases);
+                        result.title = MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases, previousFileTestCases);
                         const parentTitle = parent != null ? parent.fullTitle : null;
                         result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
                         result.path = PathUtils.normalizePath(sourceFile.fileName);
                         result.parentId = parent != null && parent.id;
                         result.code = `${result.title}${result.path}`
                         result.hasChildren = false;
+                        result = MochaTestFinder.fillTestCase(result, previousFileTestCases);
                         testCases.push(result);
 
                         return result;
@@ -132,16 +170,17 @@ export class MochaTestFinder {
                     case "it": {
                         const pos: number = sourceFile.text.lastIndexOf("it", obj.arguments[0].pos);
 
-                        let result: ItItem = new ItItem();
+                        let result: TestCase = new ItItem();
                         result.line = sourceFile.getLineAndCharacterOfPosition(pos).line;
 
-                        result.title = MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases);
+                        result.title = MochaTestFinder.visit(sourceFile, obj.arguments[0], null, testCases, previousFileTestCases);
                         const parentTitle = parent != null ? parent.fullTitle : null;
                         result.fullTitle = parentTitle ? parentTitle + " " + result.title : result.title;
                         result.path = PathUtils.normalizePath(sourceFile.fileName);
                         result.parentId = parent != null && parent.id;
                         result.code = `${result.title}${result.path}`
                         result.hasChildren = false;
+                        result = MochaTestFinder.fillTestCase(result, previousFileTestCases);
                         testCases.push(result);
 
                         return result;
@@ -153,7 +192,7 @@ export class MochaTestFinder {
 
             case ts.SyntaxKind.ArrowFunction: {
                 const obj: ts.ArrowFunction = node as ts.ArrowFunction;
-                return MochaTestFinder.visit(sourceFile, obj.body, parent, testCases);
+                return MochaTestFinder.visit(sourceFile, obj.body, parent, testCases, previousFileTestCases);
             }
 
             case ts.SyntaxKind.Identifier: {
@@ -169,7 +208,7 @@ export class MochaTestFinder {
             case ts.SyntaxKind.FunctionExpression: {
                 const obj: ts.FunctionExpression = node as ts.FunctionExpression;
                 if (obj.parameters.length === 0) {
-                    return MochaTestFinder.visit(sourceFile, obj.body, parent, testCases);
+                    return MochaTestFinder.visit(sourceFile, obj.body, parent, testCases, previousFileTestCases);
                 }
 
                 break;
@@ -177,7 +216,7 @@ export class MochaTestFinder {
 
             case ts.SyntaxKind.Block: {
                 const obj: ts.Block = node as ts.Block;
-                return obj.statements.map(statement => MochaTestFinder.visit(sourceFile, statement, parent, testCases)).filter(o => o);
+                return obj.statements.map(statement => MochaTestFinder.visit(sourceFile, statement, parent, testCases, previousFileTestCases)).filter(o => o);
             }
 
             case ts.SyntaxKind.ImportDeclaration:
@@ -185,8 +224,8 @@ export class MochaTestFinder {
                 return null;
             case ts.SyntaxKind.PropertyAccessExpression: {
                 const obj: ts.PropertyAccessExpression = node as ts.PropertyAccessExpression;
-                return MochaTestFinder.visit(sourceFile, obj.expression, parent, testCases) + "."
-                    + MochaTestFinder.visit(sourceFile, obj.name, parent, testCases);
+                return MochaTestFinder.visit(sourceFile, obj.expression, parent, testCases, previousFileTestCases) + "."
+                    + MochaTestFinder.visit(sourceFile, obj.name, parent, testCases, previousFileTestCases);
             }
             case ts.SyntaxKind.FunctionDeclaration: {
                 const obj: ts.FunctionDeclaration = node as ts.FunctionDeclaration;
@@ -194,8 +233,8 @@ export class MochaTestFinder {
             }
             case ts.SyntaxKind.BinaryExpression: {
                 const obj: ts.BinaryExpression = node as ts.BinaryExpression;
-                const textLeft = <string>MochaTestFinder.visit(sourceFile, obj.left, parent, testCases)
-                const textRight = <string>MochaTestFinder.visit(sourceFile, obj.right, parent, testCases);
+                const textLeft = <string>MochaTestFinder.visit(sourceFile, obj.left, parent, testCases, previousFileTestCases)
+                const textRight = <string>MochaTestFinder.visit(sourceFile, obj.right, parent, testCases, previousFileTestCases);
                 return textLeft + textRight
             }
             default: {

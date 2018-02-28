@@ -65,16 +65,16 @@ export class GroupByOutcome extends GroupBy {
             const notRunTestsLabel: TreeLabel = new TreeLabel("Not Run Tests", TestCaseStatus.None, this.getNotRunTests(testCases));
 
             // only add filters if there is children to display
-            if (failedTestsLabel.getChildrenLenght() > 0) {
+            if (failedTestsLabel.children.length > 0) {
                 outcomeArray.push(failedTestsLabel);
             }
-            if (passedTests.getChildrenLenght() > 0) {
+            if (passedTests.children.length > 0) {
                 outcomeArray.push(passedTests);
             }
-            if (skippedTests.getChildrenLenght() > 0) {
+            if (skippedTests.children.length > 0) {
                 outcomeArray.push(skippedTests);
             }
-            if (notRunTestsLabel.getChildrenLenght() > 0) {
+            if (notRunTestsLabel.children.length > 0) {
                 outcomeArray.push(notRunTestsLabel);
             }
 

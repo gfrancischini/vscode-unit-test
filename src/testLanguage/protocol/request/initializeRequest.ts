@@ -45,6 +45,11 @@ export interface InitializeResult {
 	 */
 	success : boolean;
 	
+	/** 
+	 * A glob pattern for watch files changes to rebuild the test 
+	 */
+	watchFilesGlob? : string;
+
 	/**
 	 * Custom initialization results.
 	 */

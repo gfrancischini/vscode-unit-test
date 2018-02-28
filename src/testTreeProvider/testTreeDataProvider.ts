@@ -110,7 +110,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         // if the testcase exists then resolve it children
         if (item) {
             if (item instanceof TreeLabel) {
-                return Promise.resolve(item.getChildren() ? item.getChildren() : []);
+                return Promise.resolve(item.children ? item.children : []);
             }
             const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
                 return testCase.parentId === item.id;
@@ -282,7 +282,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      */
     private runTest(item: TestTreeType, debug: boolean = false) {
         if (item instanceof TreeLabel) {
-            this.testLanguageClient.runTests(item.getChildren(), debug);
+            this.testLanguageClient.runTests(item.children, debug);
         }
         else {
             const testCases = this.testLanguageClient.testCaseCollection.findAllChildrens(item.id);

@@ -77,6 +77,12 @@ Calling out known issues can help limit users opening duplicate issues against y
 
 ## Release Notes
 
+### 0.3.0
+Add command Stop Running Tests
+Fix test status bug when debugger is stopped but the test was still running
+Refresh test explorer/Restart test explorer now clears the current list of tests
+Test files that are modified are now watched and test are rediscovered
+
 ### 0.2.2
 Fix bug for running typescript tests
 

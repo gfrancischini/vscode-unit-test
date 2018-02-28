@@ -1,6 +1,6 @@
 export {TestCase, TestCaseStatus} from "./testCase"
 export {InitializeError, InitializeParams, InitializeRequest, InitializeResult} from "./request/initializeRequest"
-export {DiscoveryTestCasesError, DiscoveryTestCasesParams, DiscoveryTestCasesRequest, DiscoveryTestCasesResult} from "./request/discoveryTestCasesRequest"
+export {DiscoveryTestCasesError, DiscoveryTestCasesParams, DiscoveryTestCasesRequest, DiscoveryTestCasesResult, FileChangeType, FileChangeParams} from "./request/discoveryTestCasesRequest"
 export {RunTestCasesError, RunTestCasesParams, RunTestCasesRequest, RunTestCasesResult} from "./request/runTestCasesRequest"
 
 export {TestCaseUpdateParams, TestCaseUpdateNotification} from "./notification/testCaseUpdateNotification"

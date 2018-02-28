@@ -4,8 +4,9 @@ import * as portfinder from "portfinder"
 
 import { StreamMessageReader, SocketMessageWriter } from 'vscode-jsonrpc';
 import {
+    InitializeParams, InitializeResult,
     RunTestCasesParams, RunTestCasesResult,
-    DiscoveryTestCasesParams, DiscoveryTestCasesResult, CancelParams
+    DiscoveryTestCasesParams, DiscoveryTestCasesResult, CancelParams, FileChangeParams, FileChangeType
 } from "../testLanguage/protocol"
 import { TestCase, TestCaseStatus } from "../testLanguage/protocol";
 import { escapeRegex } from "../utils/string"
@@ -17,6 +18,9 @@ import { getAllTestFilesInDirectory } from '../utils/directory'
 import { PathUtils } from "../utils/path"
 import { getMochaServerPath } from "./testRunner/mochaCaller"
 
+/**
+ * The settings that are provived by vscode
+ */
 export interface MochaProviderSettings {
     /** 
      * Mocha Glob pattern used to find test files
@@ -36,7 +40,9 @@ export interface MochaProviderSettings {
 
 
 export class MochaTestLanguageServer extends TestLanguageServer {
-    //TODO implement a way to join test cases everytime we run the on discovery
+    /**
+     * The most up to date test cases
+     */
     protected testCases: Array<TestCase> = new Array<TestCase>();
 
     /**
@@ -55,6 +61,9 @@ export class MochaTestLanguageServer extends TestLanguageServer {
 
     }
 
+    /** 
+     * Return the provider settings with default configurations if needed 
+     */
     public getProviderSettings(): MochaProviderSettings {
         if (this.initializeParams.settings == null) {
             //return the default configuration
@@ -80,6 +89,9 @@ export class MochaTestLanguageServer extends TestLanguageServer {
         return this.initializeParams.settings;
     }
 
+    /**
+     * Check if the mocha is available on the path
+     */
     protected isMochaAvailable(path: string): boolean {
         if (fs.existsSync(path)) {
             console.log("using mocha from= " + path);
@@ -110,6 +122,16 @@ export class MochaTestLanguageServer extends TestLanguageServer {
      */
     protected registerListeners() {
         super.registerListeners();
+
+        this.connection.onInitialize((params: InitializeParams): InitializeResult => {
+            this.initializeParams = params;
+            return {
+                success: true,
+                version: "0.0.1",
+                watchFilesGlob: this.getProviderSettings().glob,
+                customResults: { "success": "The server was successfully initialized" }
+            };
+        });
 
         this.connection.onRunTestCases((params: RunTestCasesParams) => {
             this.mochaRunnerClient = new MochaRunnerClient(12345);
@@ -161,16 +183,43 @@ export class MochaTestLanguageServer extends TestLanguageServer {
         });
 
         this.connection.onDiscoveryTestCases((params: DiscoveryTestCasesParams): DiscoveryTestCasesResult => {
-            this.testCases = new Array<TestCase>();
-            const testFilesPath = getAllTestFilesInDirectory(params.directory, this.getProviderSettings().glob);
+            let testFilesPath = null;
+            if (params.directory) {
+                this.testCases = new Array<TestCase>();
+                testFilesPath = getAllTestFilesInDirectory(params.directory, this.getProviderSettings().glob);
+            }
+            else if (params.fileChanges) {
+                testFilesPath = new Array<string>();
+                params.fileChanges.forEach(fileChange => {
+                    if (fileChange.type === FileChangeType.Delete) {
+                        this.testCases = this.testCases.filter((testCase) => {
+                            return testCase.path !== fileChange.path;
+                        });
+                    }
+                    else {
+                        testFilesPath.push(fileChange.path);
+                    }
+                });
+            }
             testFilesPath.forEach((filePath, i) => {
                 this.getConnection().dataOutput({
                     data: `Discovering test for file ${filePath} - ${i + 1}/${testFilesPath.length}`
                 })
-                const discoveryTestCases = new Array<TestCase>();
-                discoveryTestCases.push(...MochaTestFinder.findTestCases(PathUtils.normalizePath(filePath)));
-                this.findDuplicatesTestCases(discoveryTestCases);
-                this.testCases.push(...discoveryTestCases);
+
+                //return only the test cases that match the current file path
+                const currentFileTestCases = this.testCases.filter((testCase) => {
+                    return testCase.path === PathUtils.normalizePath(filePath);
+                })
+
+                //delete current test cases from the same path
+                this.testCases = this.testCases.filter((testCase) => {
+                    return testCase.path !== PathUtils.normalizePath(filePath);
+                })
+
+                const discoveredTestCases = MochaTestFinder.findTestCases(PathUtils.normalizePath(filePath), currentFileTestCases)
+                this.findDuplicatesTestCases(discoveredTestCases);
+
+                this.testCases.push(...discoveredTestCases);
             })
 
             return {
@@ -178,13 +227,16 @@ export class MochaTestLanguageServer extends TestLanguageServer {
             }
         });
 
-        this.connection.onCancel((params : CancelParams) => {
+        this.connection.onCancel((params: CancelParams) => {
             // currently we only allow cancelling the run test
             this.mochaRunnerClient.stopChildProcess();
         });
-
     }
 
+    /**
+     * Cancel (set isRunning to false) on every test that is still running
+     * @param testCases The collection of test cases
+     */
     protected cancelTestsRunning(testCases: Array<TestCase>) {
         testCases.forEach((testCase) => {
             if (testCase.isRunning) {

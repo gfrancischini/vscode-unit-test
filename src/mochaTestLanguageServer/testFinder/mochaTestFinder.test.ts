@@ -10,11 +10,11 @@ const getModuleFilePath = (name: string): string => { return getTestFilePath("mo
 
 suite('findTestCases', () => {
     test('throw file not found exception when file does not exists', () => {
-        chai.should().throw(() => { MochaTestFinder.findTestCases("wrong file path") }, Error);
+        chai.should().throw(() => { MochaTestFinder.findTestCases("wrong file path", new Array<TestCase>()) }, Error);
     });
     test('return empty Array when there is no test case ', () => {
         const filePath = getModuleFilePath("TestDeclaration_EmptyFile.js");
-        const value = MochaTestFinder.findTestCases(filePath);
+        const value = MochaTestFinder.findTestCases(filePath, new Array<TestCase>());
         chai.expect(value, "The array should be empty").to.be.empty;
     });
 });
@@ -22,7 +22,7 @@ suite('findTestCases', () => {
 suite('findTestCases visit ', () => {
     test('should retrieve the correct test case name from multiple lines', () => {
         const filePath = getModuleFilePath("TestDeclaration_MultipleLineName.js");
-        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath);
+        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath, new Array<TestCase>());
 
         equalsTestCase(value[1], {
             title: "This is a multiple line title that was correctly parsed"
@@ -31,7 +31,7 @@ suite('findTestCases visit ', () => {
 
     test('should retrieve the correct test case even if file has syntax errors', () => {
         const filePath = getModuleFilePath("TestDeclaration_InvalidSyntax.js");
-        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath);
+        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath, new Array<TestCase>());
         equalsTestCase(value[1], {
             title: "singleIt"
         });
@@ -42,7 +42,7 @@ suite('findTestCases visit ', () => {
 suite('findTestCases visit BDD', () => {
     test('should find one it test case', () => {
         const filePath = getModuleFilePath("SingleDeclaration_BDD_it.js");
-        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath);
+        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath, new Array<TestCase>());
 
         //every time we find a test the first position is the file and the second is the test
         chai.expect(value.length).to.be.equal(2);
@@ -61,7 +61,7 @@ suite('findTestCases visit BDD', () => {
 
     test('should find one describe test case', () => {
         const filePath = getModuleFilePath("SingleDeclaration_BDD_describe.js");
-        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath);
+        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath, new Array<TestCase>());
 
         //every time we find a test the first position is the file and the second is the test
         chai.expect(value.length).to.be.equal(2);
@@ -80,7 +80,7 @@ suite('findTestCases visit BDD', () => {
 
     test('should find one describe with one it child', () => {
         const filePath = getModuleFilePath("TestDeclaration_BDD_Scenario1.js");
-        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath);
+        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath, new Array<TestCase>());
 
         //every time we find a test the first position is the file and the second is the test
         chai.expect(value.length).to.be.equal(3);
@@ -116,7 +116,7 @@ suite('findTestCases visit BDD', () => {
 suite('findTestCases visit TDD', () => {
     test('should find one "test" test case', () => {
         const filePath = getModuleFilePath("SingleDeclaration_TDD_test.js");
-        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath);
+        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath, new Array<TestCase>());
 
         //every time we find a test the first position is the file and the second is the test
         chai.expect(value.length).to.be.equal(2);
@@ -135,7 +135,7 @@ suite('findTestCases visit TDD', () => {
 
     test('should find one "suite" test case', () => {
         const filePath = getModuleFilePath("SingleDeclaration_TDD_suite.js");
-        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath);
+        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath, new Array<TestCase>());
 
         //every time we find a test the first position is the file and the second is the test
         chai.expect(value.length).to.be.equal(2);
@@ -154,7 +154,7 @@ suite('findTestCases visit TDD', () => {
 
     test('should find one "suite" with one "test" child', () => {
         const filePath = getModuleFilePath("TestDeclaration_TDD_Scenario1.js");
-        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath);
+        const value = <Array<MochaTestCase>>MochaTestFinder.findTestCases(filePath, new Array<TestCase>());
 
         //every time we find a test the first position is the file and the second is the test
         chai.expect(value.length).to.be.equal(3);

@@ -1,9 +1,5 @@
 import { PathUtils } from "../../utils/path";
-
-/** 
- * Unique internal id 
- */
-let uniqueId = 0;
+import * as uuid from "uuid/v1"
 
 /**
  * The enumerator that describe the test outcome results
@@ -80,41 +76,41 @@ export class TestCase {
     /**
      * Provides an error message if the test failed.
      */
-    errorMessage: string;
+    public errorMessage: string;
 
     /**
      * Provides the stack trace for the error.
      */
-    errorStackTrace: string;
+    public errorStackTrace: string;
 
     /**
      * Provides an integer specifying the result of a test case execution.
      */
-    status: TestCaseStatus;
+    public status: TestCaseStatus;
 
     /**
      * Provides the start time of the test case execution.
      */
-    startTime: Date;
+    public startTime: Date;
 
     /**
      * Provides the end time of test case execution.
      */
-    endTime: Date;
+    public endTime: Date;
 
     /**
      * The session id when this test runs
      */
-    sessionId: number;
+    public sessionId: number;
 
     /**
      * Return the test duration in milliseconds
      */
-    duration: number;
+    public duration: number;
 
     constructor() {
         this.status = TestCaseStatus.None;
-        this.id = (uniqueId++).toString();
+        this.id = uuid();
     }
 }
 
