@@ -148,6 +148,13 @@ export class MochaTestLanguageServer extends TestLanguageServer {
                                 this.connection.testCaseUpdate({ testCase });
                             }
                         });
+
+                        client.onClose(() => {
+                            this.cancelTestsRunning(this.testCases);
+                            resolve({
+                                "test": "connection closed"
+                            });
+                        })
                     });
                 });
             });
@@ -171,6 +178,17 @@ export class MochaTestLanguageServer extends TestLanguageServer {
             }
         });
 
+    }
+
+    protected cancelTestsRunning(testCases: Array<TestCase>) {
+        testCases.forEach((testCase) => {
+            if (testCase.isRunning) {
+                testCase.isRunning = false;
+                this.getConnection().testCaseUpdate({
+                    testCase
+                });
+            }
+        })
     }
 
     /**
@@ -240,7 +258,6 @@ export class MochaTestLanguageServer extends TestLanguageServer {
                 case TestSuiteUpdateType.SuiteStart:
                     testCase.startTime = new Date();
                     testCase.isRunning = true;
-                    testCase.sessionId = sessionId;
                     break;
                 case TestSuiteUpdateType.TestFail:
                     this.currentTestSession.qtyOfFailures++;
@@ -248,6 +265,7 @@ export class MochaTestLanguageServer extends TestLanguageServer {
                     testCase.errorMessage = testSuite.err.message;
                     testCase.errorStackTrace = testSuite.err.stack;
                     testCase.status = TestCaseStatus.Failed;
+                    testCase.sessionId = sessionId;
                     testCase.endTime = new Date();
                     testCase.duration = testCase.endTime.getTime() - testCase.startTime.getTime();
                     break;
@@ -256,6 +274,7 @@ export class MochaTestLanguageServer extends TestLanguageServer {
                     testCase.isRunning = false;
                     testCase.status = TestCaseStatus.Passed;
                     testCase.endTime = new Date();
+                    testCase.sessionId = sessionId;
                     testCase.duration = testCase.endTime.getTime() - testCase.startTime.getTime();
                     break;
                 case TestSuiteUpdateType.TestPending:

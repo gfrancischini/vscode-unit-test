@@ -70,8 +70,7 @@ suite("convertTestSuiteToTestCase", () => {
         });
         equalsTestCase(actual, {
             //startTime: new Date(),
-            isRunning: true,
-            sessionId: 1000
+            isRunning: true
         });
     })
 
@@ -82,8 +81,7 @@ suite("convertTestSuiteToTestCase", () => {
         });
         equalsTestCase(actual, {
             //startTime: new Date(),
-            isRunning: true,
-            sessionId: 1000
+            isRunning: true
         });
     })
 
@@ -95,7 +93,6 @@ suite("convertTestSuiteToTestCase", () => {
         equalsTestCase(actual, {
             //startTime: new Date(),
             isRunning: true,
-            sessionId: 1000
         });
     })
 
@@ -114,6 +111,7 @@ suite("convertTestSuiteToTestCase", () => {
             //startTime: new Date(),
             //endTime: new Date(),
             isRunning: false,
+            sessionId: 1000,
             errorMessage: "error message",
             errorStackTrace: "error stack",
             status: TestCaseStatus.Failed,
@@ -163,6 +161,7 @@ suite("convertTestSuiteToTestCase", () => {
         equalsTestCase(actual, {
             //startTime: new Date(),
             //endTime: new Date(),
+            sessionId: 1000,
             isRunning: false,
             status: TestCaseStatus.Passed,
         });
@@ -176,6 +175,7 @@ suite("convertTestSuiteToTestCase", () => {
         equalsTestCase(actual, {
             //startTime: new Date(),
             //endTime: new Date(),
+            sessionId: 1000,
             isRunning: false,
             status: TestCaseStatus.Passed,
         });
@@ -192,6 +192,7 @@ suite("convertTestSuiteToTestCase", () => {
         equalsTestCase(actual, {
             //startTime: new Date(),
             //endTime: new Date(),
+            sessionId: 1000,
             isRunning: false,
             status: TestCaseStatus.Failed,
         });
@@ -207,6 +208,7 @@ suite("convertTestSuiteToTestCase", () => {
         equalsTestCase(actual, {
             //startTime: new Date(),
             //endTime: new Date(),
+            sessionId: 1000,
             isRunning: false,
             status: TestCaseStatus.Skipped,
         });

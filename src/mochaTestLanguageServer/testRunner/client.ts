@@ -1,4 +1,5 @@
-import { createClientSocketTransport, NotificationType, createMessageConnection } from 'vscode-jsonrpc';
+import { createClientSocketTransport, NotificationType, createMessageConnection, 
+    MessageReader, MessageWriter } from 'vscode-jsonrpc';
 import {
     RunRequest, RunParams, RunResult,
     TestSuiteUpdateNotification, TestSuiteUpdateParams
@@ -12,6 +13,8 @@ export interface IConnection {
     listen(): void;
     initialize(params: RunParams): Thenable<RunResult>;
     onTestSuiteUpdated(handler: any): void;
+    onClose(handler: any): void;
+    onError(handler:any) : void;
 }
 
 export class MochaRunnerClient {
@@ -29,7 +32,7 @@ export class MochaRunnerClient {
         return this.connection;
     }
 
-    private createConnection(reader, writer): IConnection {
+    private createConnection(reader : MessageReader, writer : MessageWriter): IConnection {
         // Use stdin and stdout for communication:
         let msgConnection = createMessageConnection(reader, writer);
 
@@ -38,6 +41,8 @@ export class MochaRunnerClient {
             initialize: (params: RunParams) => msgConnection.sendRequest(RunRequest.type, params),
             onTestSuiteUpdated: (handler) => msgConnection.onNotification(TestSuiteUpdateNotification.type, handler),
             //onDataOutput: (handler) => msgConnection.onNotification(DataOutputNotification.type, handler),
+            onClose: (handler)  => msgConnection.onClose(handler),
+            onError: (handler)  => msgConnection.onError(handler),
         }
 
         return result;
@@ -73,7 +78,7 @@ export class MochaRunnerClient {
      * @param cwd 
      * @param port 
      */
-    public startChildProcess(cwd : string, port : number): Promise<boolean> {
+    public startChildProcess(cwd: string, port: number): Promise<boolean> {
         const mochaArgs = new Array<string>();
         this.childProcess = startMochaRunnerServer(cwd, port);
 
