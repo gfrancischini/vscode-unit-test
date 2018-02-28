@@ -1,17 +1,18 @@
 import * as vscode from "vscode";
+import * as cp from 'child_process';
+import * as throttle from "throttle-debounce/throttle";
+import * as debounce from "throttle-debounce/debounce";
+import * as Collections from "typescript-collections";
+import * as path from "path";
 
 import { TestCase, RunTestCasesResult, DiscoveryTestCasesResult, DataOutputParams, DebugInformationParams } from '../testLanguage/protocol';
 import Event, { Emitter } from "../base/common/Event";
-import * as Collections from "typescript-collections";
-import * as path from "path";
 import { startServer } from "../utils/server";
 import { TestCaseCollection } from "./testCaseCollection"
 import { TestLanguageClient } from "../testLanguage/client/testLanguageClient"
 import { StreamMessageReader, StreamMessageWriter, SocketMessageReader } from 'vscode-jsonrpc';
-import * as cp from 'child_process';
-import * as throttle from "throttle-debounce/throttle";
 import { PathUtils } from "../utils/path"
-
+import { getwatchInterval } from "../utils/vsconfig"
 import {
     InitializeParams, InitializeResult,
     TestCaseUpdateParams, FileChangeType, FileChangeParams
@@ -113,6 +114,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
             this._onDidTestCaseChanged.fire();
         });
 
+
         this.connection.onTestCaseUpdated((params: TestCaseUpdateParams): any => {
             let testCase: TestCase = Object.assign(new TestCase(), params.testCase);
 
@@ -139,41 +141,40 @@ export class TestTreeLanguageClient extends TestLanguageClient {
         });
     }
 
+    protected fileChanges = new Array<FileChangeParams>();
+
+    public fileChangesDebounced = debounce(getwatchInterval(), () => {
+        this.discoveryWorkspaceTests(null, this.fileChanges);
+        this.fileChanges = new Array<FileChangeParams>();
+    });
+
+
     public watchForWorkspaceFilesChange(glob: string) {
-        //const test = vscode.workspace.workspaceFolders[0].uri;
-        //let pattern = path.join(this.directory, this.globPattern);
         const fileSystemWatcher = vscode.workspace.createFileSystemWatcher(glob);
 
         fileSystemWatcher.onDidChange((uri: vscode.Uri) => {
-            //this.connection.fileChange({type: FileChangeType.Change, path: PathUtils.normalizePath(uri.fsPath) });
-            const fileChanges = new Array<FileChangeParams>();
-            fileChanges.push({
+            this.fileChanges.push({
                 type: FileChangeType.Change,
                 path: PathUtils.normalizePath(uri.fsPath)
             })
-            this.discoveryWorkspaceTests(null, fileChanges);
+            this.fileChangesDebounced();
         });
 
         fileSystemWatcher.onDidCreate((uri: vscode.Uri) => {
-            const fileChanges = new Array<FileChangeParams>();
-            fileChanges.push({
+            this.fileChanges.push({
                 type: FileChangeType.Create,
                 path: PathUtils.normalizePath(uri.fsPath)
             })
-            this.discoveryWorkspaceTests(null, fileChanges);
-            //this.connection.fileChange({type: FileChangeType.Create, path: PathUtils.normalizePath(uri.fsPath) });
+            this.fileChangesDebounced();
         });
 
         fileSystemWatcher.onDidDelete((uri: vscode.Uri) => {
-            const fileChanges = new Array<FileChangeParams>();
-            fileChanges.push({
+            this.fileChanges.push({
                 type: FileChangeType.Delete,
                 path: PathUtils.normalizePath(uri.fsPath)
-            })
-            this.discoveryWorkspaceTests(null, fileChanges);
-            //this.connection.fileChange({type: FileChangeType.Delete, path: PathUtils.normalizePath(uri.fsPath)h });
+            });
+            this.fileChangesDebounced();
         });
-
     }
 
     /**
@@ -182,7 +183,7 @@ export class TestTreeLanguageClient extends TestLanguageClient {
     */
     public discoveryWorkspaceTests(directory: string, fileChanges?: Array<FileChangeParams>): Promise<Array<TestCase>> {
         this.testOutputChannel.appendLine("Start test discovery");
-        
+
         return <Promise<Array<TestCase>>>vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: "Test Adapter" }, progress => {
             this.testOutputChannel.appendLine(`Discovering Tests`);
             return new Promise((resolve, reject) => {

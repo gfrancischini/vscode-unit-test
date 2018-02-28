@@ -14,6 +14,12 @@ export function isAutoInitializeEnabled(): boolean {
     return true;
 }
 
+export function getwatchInterval(): number {
+    const configuration  = vscode.workspace.getConfiguration(`unit.test`);
+    const value = configuration.get("watchInterval");
+    return <number>value;
+}
+
 export function getTestProviderSettings(testProviderName : string): vscode.WorkspaceConfiguration {
     const configuration  = vscode.workspace.getConfiguration(`unit.test.${testProviderName}`);
     return configuration;

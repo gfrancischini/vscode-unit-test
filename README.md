@@ -64,13 +64,16 @@ This extension contributes the following settings:
 "unit.test.mocha" : {
     "glob": "test/**/*.js",
     "opts": "/Test/mocha.opts",
+    "mochaPath": "node_module/mocha"
 }
+
+"unit.test.watchInterval" : 3000
 ```
 
 * `glob`: Optional Mocha Glob pattern used to find test files. By default the extension will use the glob pattern "test/**/*.js"
 * `opts`: Optional Mocha Opts Path Relative path to the workspace. By default the extension will search for mocha.opts under you test directory
 * `mochaPath` : Optional Mocha relative or full path to the installed mocha module. By default the extension will search the node_modules of you project
-
+* `watchInterval` : Define the minimum amount of time required before dispatch a file change message and discover the tests
 ## Known Issues
 
 Calling out known issues can help limit users opening duplicate issues against your extension.

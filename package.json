@@ -122,6 +122,11 @@
                     "type": "string",
                     "default": "mocha",
                     "description": "Define the current provider used for this workspace"
+                },
+                "unit.test.watchInterval": {
+                    "type": "number",
+                    "default": "3000",
+                    "description": "Define the minimum amount of time required before dispatch a file change message"
                 }
             }
         }
