@@ -71,6 +71,13 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
         this.registerServerCommands(context);
 
         this.registerBasicCommands(context);
+
+        vscode.workspace.onDidChangeConfiguration((event) => {
+            if(event.affectsConfiguration("unit.test")) {
+                //restart server due to configuration changes
+                this.onCommandRestartServer();
+            }
+        })
     }
 
     private initializeLanguageClient() {
