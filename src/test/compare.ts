@@ -32,3 +32,23 @@ export function equalsTestCase(actual: TestCase, expected: TestCaseCompare) {
         chai.expect(actual[key], message).to.be.equals(expected[key]);
     }
 }
+
+export function resetTestCase(testCase: TestCase) {
+    for (let key in testCase) {
+        testCase[key] = null;
+    }
+}
+
+export function getTestCaseById(id: string, testCases: Array<TestCase>): TestCase {
+    const filtered = testCases.filter((testCase) => {
+        return testCase.id === id;
+    })
+    return filtered[0];
+}
+
+export function getTestCaseByFullTitle(fullTitle: string, testCases: Array<TestCase>): TestCase {
+    const filtered = testCases.filter((testCase) => {
+        return testCase.fullTitle === fullTitle;
+    })
+    return filtered[0];
+}

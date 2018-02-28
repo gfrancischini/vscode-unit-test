@@ -290,7 +290,7 @@ export class MochaTestLanguageServer extends TestLanguageServer {
                     else if (this.currentTestSession.qtyOfSkip > 0) {
                         testCase.status = TestCaseStatus.Skipped;
                     }
-                    else if (this.currentTestSession.qtyOfSuccess > 0) {
+                    else {
                         testCase.status = TestCaseStatus.Passed;
                     }
 
