@@ -9,27 +9,29 @@ import { TestProvider } from "./testProvider"
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-    
+
     if (isExtensionEnabled()) {
-        const testProvider : TestProvider = new TestProvider(context);
+        const testProvider: TestProvider = new TestProvider(context);
         testProvider.initialize().then((initalizeResult) => {
-            console.log("initalizeResult: " + JSON.stringify(initalizeResult));          
+            console.log("initalizeResult: " + JSON.stringify(initalizeResult));
 
             const testTreeDataProvider: TestTreeDataProvider = new TestTreeDataProvider(context, testProvider);
             vscode.window.registerTreeDataProvider("unit.test.explorer.vsTestTree", testTreeDataProvider);
 
-            const JS_MODE: vscode.DocumentFilter = { language: 'typescript', scheme: 'file' };
-            const testCodeLensProvider: TestCodeLensProvider = new TestCodeLensProvider(context, testProvider);
-            context.subscriptions.push(vscode.languages.registerCodeLensProvider(JS_MODE, testCodeLensProvider));
+            //TODO: improve this logic because we need to refresh the watchfilesglob when it change
            
+            const lensDocumentFilter: vscode.DocumentFilter = { pattern: initalizeResult.watchFilesGlob, scheme: "file" };
+            const testCodeLensProvider: TestCodeLensProvider = new TestCodeLensProvider(context, testProvider);
+            context.subscriptions.push(vscode.languages.registerCodeLensProvider(lensDocumentFilter, testCodeLensProvider));
+
             testProvider.discoveryTests();
         }).catch((reason) => {
             vscode.window.showErrorMessage(`Error initializing: ${reason}`);
-            if(reason instanceof Error) {
+            if (reason instanceof Error) {
                 console.log(`Error initializing: ${reason.message} : ${reason.stack}`);
             }
         })
-    }  
+    }
 }
 
 

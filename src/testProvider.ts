@@ -59,8 +59,8 @@ export class TestProvider {
     }
 
 
-    public initialize() {
-        return new Promise((resolve, reject) => {
+    public initialize(): Promise<InitializeResult> {
+        return new Promise<InitializeResult>((resolve, reject) => {
             this.directory = vscode.workspace.workspaceFolders[0].uri.fsPath;
             this.client = new TestClient(this.directory, readSettings(vscode.workspace.workspaceFolders[0].uri));
 
