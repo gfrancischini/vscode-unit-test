@@ -11,5 +11,13 @@
     "unit.test.mocha": {
         "glob": "**/*.test.ts",
         "opts": "mocha.opts"
-    }
+    },
+
+    "editor.codeLens": true,
+
+    "typescript.implementationsCodeLens.enabled": true,
+
+    "typescript.referencesCodeLens.enabled": true
+
+    
 }

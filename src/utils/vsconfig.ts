@@ -30,3 +30,11 @@ export function getCurrentTestProviderName(scope : vscode.Uri) {
     const value = configuration.get("provider");
     return <string>value;
 }
+
+export function readSettings(scope: vscode.Uri) {
+    const currentProviderName = getCurrentTestProviderName(scope);
+
+    const configurations = getTestProviderSettings(currentProviderName);
+
+    return configurations;
+}

@@ -4,113 +4,43 @@ import { TreeLabel } from "./treeLabel"
 import { GroupByProvider } from "./groupByProvider"
 import { isExtensionEnabled, isAutoInitializeEnabled, getCurrentTestProviderName, getTestProviderSettings } from "../utils/vsconfig"
 import { getImageResource } from "../utils/image"
-import { TestTreeLanguageClient } from "./testTreeLanguageClient"
+import { TestProvider, TestLanguageStatus } from "../testProvider"
 import * as Collections from "typescript-collections";
 import { TestTreeType } from "./treeType"
-
-
-/**
- * Register the test tree explorer
- * @param context 
- */
-export function RegisterVSTestTreeProvider(context: vscode.ExtensionContext) {
-    const testTreeDataProvider: TestTreeDataProvider = new TestTreeDataProvider(context);
-    vscode.window.registerTreeDataProvider("unit.test.explorer.vsTestTree", testTreeDataProvider);
-}
-
-
-/**
- * Additional data to help the tree data provider
- */
-class TestAdditionalData {
-    collapsibleState: vscode.TreeItemCollapsibleState;
-}
-
-enum TestTreeDataProviderStatus {
-    None,
-    Initializing,
-    FindingTests,
-    Ready
-}
 
 export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeType> {
     public _onDidChangeTreeData: vscode.EventEmitter<TestTreeType | null> = new vscode.EventEmitter<TestTreeType | null>();
     readonly onDidChangeTreeData: vscode.Event<TestTreeType | null> = this._onDidChangeTreeData.event;
 
     /**
-     * The test service to discover and run tests
-     */
-    private testLanguageClient: TestTreeLanguageClient;
-
-    /**
      * Group by filter provider that categorizes the test cases
      */
     private groupByFilter: GroupByProvider = new GroupByProvider();
 
-    /**
-     * Current test tree status
-     */
-    private status: TestTreeDataProviderStatus = TestTreeDataProviderStatus.None;
-
-    private rootDir = null;
-
-    /**
-     * Create the test result output channel
-     */
-    private testResultOutputChannel = vscode.window.createOutputChannel('Test Result');
 
     /**
      * 
+     * @param context 
+     * @param codeTestLanguageClientProvider The test service to discover and run tests
      */
-    constructor(private context: vscode.ExtensionContext) {
-        //todo: bug here when there is more than one workspace folders
-        this.rootDir = vscode.workspace.workspaceFolders[0].uri.fsPath;
-        
-        this.initializeLanguageClient();
-
+    constructor(private context: vscode.ExtensionContext, private testProvider: TestProvider) {
         this.registerServerCommands(context);
 
-        this.registerBasicCommands(context);
-
-        vscode.workspace.onDidChangeConfiguration((event) => {
-            if(event.affectsConfiguration("unit.test")) {
-                //restart server due to configuration changes
-                this.onCommandRestartServer();
-            }
+        this.testProvider.client.onDidTestCaseChanged((testCase : TestCase) => {
+            this.refrehTestExplorer(null);
         })
     }
 
-    private initializeLanguageClient() {
-        const providerSettings = this.readSettings(vscode.workspace.workspaceFolders[0].uri);
-
-        this.testLanguageClient = new TestTreeLanguageClient(this.rootDir, providerSettings);
-        this.testLanguageClient.initialize().then((initalizeResult) => {
-            console.log("initalizeResult: " + JSON.stringify(initalizeResult));          
-
-            this.registerTestServiceListeners();
-
-            this.discoveryTests();
-        });
-
-    }
-
-    private readSettings(scope: vscode.Uri) {
-        const currentProviderName = getCurrentTestProviderName(scope);
-
-        const configurations = getTestProviderSettings(currentProviderName);
-
-        return configurations;
-    }
 
     /**
      * Get children method that must be implemented by test tree provider
      * @param item The test case to draw on the test tree
      */
     public getChildren(item?: TestTreeType): Thenable<TestTreeType[]> {
-        switch (this.status) {
-            case TestTreeDataProviderStatus.None:
+        switch (this.testProvider.status) {
+            case TestLanguageStatus.None:
                 return this.createNotInitializedLabel();
-            case TestTreeDataProviderStatus.Initializing:
+            case TestLanguageStatus.Initializing:
                 return this.createInitializingLabel();
         }
 
@@ -119,14 +49,14 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
             if (item instanceof TreeLabel) {
                 return Promise.resolve(item.children ? item.children : []);
             }
-            const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
+            const filtered = this.testProvider.client.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
                 return testCase.parentId === item.id;
             });
             return Promise.resolve(filtered);
         }
         else {
             // if testcase = null means that we are in the root
-            return this.groupByFilter.getSelected().getCategories(this.testLanguageClient.testCaseCollection.testCasesDictionary.values());
+            return this.groupByFilter.getSelected().getCategories(this.testProvider.client.testCaseCollection.testCasesDictionary.values());
         }
     }
 
@@ -163,7 +93,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
                 return getImageResource(`progress.svg`);
             }
             let appendStringIcon = "";
-            if (item.sessionId != this.testLanguageClient.sessionId) {
+            if (item.sessionId != this.testProvider.client.sessionId) {
                 appendStringIcon = "_previousExec";
             }
             const outcome = item.status;
@@ -184,16 +114,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
     }
 
 
-    /** 
-     * Called when discovery test is needed
-     */
-    private discoveryTests() {
-        this.status = TestTreeDataProviderStatus.FindingTests;
-        this.testLanguageClient.discoveryWorkspaceTests(this.rootDir).then((testCases) => {
-            this.status = TestTreeDataProviderStatus.Ready;
-            this._onDidChangeTreeData.fire();
-        });
-    }
+
 
 
     /**
@@ -247,150 +168,18 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * Method used to register test service listener like onDitTestCaseChanged 
      */
     private registerTestServiceListeners() {
-        this.testLanguageClient.onDidTestCaseChanged((test: TestCase) => {
+        this.testProvider.client.onDidTestCaseChanged((test: TestCase) => {
             this._onDidChangeTreeData.fire(test);
         });
     }
 
-    /**
-     * Open the test case location
-     * @param item 
-     */
-    private onCommandGoToTestLocation(item: TestTreeType) {
-        if (item instanceof TestCase) {
-
-            const uri: string = item.path;
-            vscode.workspace.openTextDocument(uri).then(result => {
-                vscode.window.showTextDocument(result);
-                const editor = vscode.window.activeTextEditor;
-
-                const range = editor.document.lineAt(item.line).range;
-                editor.selection = new vscode.Selection(range.start, range.start);
-                editor.revealRange(range);
-            });
-        }
-    }
-
-    /**
-     * Command for run all test cases
-     * @param If debugging is enabled
-     */
-    private onCommandRunAllTests(debug : boolean = false) {
-        const filtered = this.testLanguageClient.testCaseCollection.testCasesDictionary.values().filter((testCase) => {
-            return testCase.parentId == null;
-        })
-
-        this.testLanguageClient.runTests(filtered, debug);
-    }
-
-    /**
-     * Run a specific test case item
-     * @param item 
-     */
-    private runTest(item: TestTreeType, debug: boolean = false) {
-        if (item instanceof TreeLabel) {
-            this.testLanguageClient.runTests(item.children, debug);
-        }
-        else {
-            const testCases = this.testLanguageClient.testCaseCollection.findAllChildrens(item.id);
-            testCases.push(item);
-            this.testLanguageClient.runTests(testCases, debug);
-        }
-    }
-
-    private registerBasicCommands(context: vscode.ExtensionContext) {
-        //register the refresh explorer command
-        const refreshExplorerCommand = vscode.commands.registerCommand("unit.test.explorer.refresh",
-            () => this.discoveryTests());
-        context.subscriptions.push(refreshExplorerCommand);
-
-        //register the refresh explorer command
-        const restartExplorerCommand = vscode.commands.registerCommand("unit.test.explorer.restart",
-            () => this.onCommandRestartServer());
-        context.subscriptions.push(restartExplorerCommand);
-    }
-
-    /**
-     * Register test explorer commands
-     * @param context 
-     */
     private registerServerCommands(context: vscode.ExtensionContext) {
 
-        //register the go to test location command
-        const goToTestLocationCommand = vscode.commands.registerCommand("unit.test.explorer.open",
-            (event) => this.onCommandGoToTestLocation(event));
-        context.subscriptions.push(goToTestLocationCommand);
 
         //register the group by explorer command
         const groupByExplorerCommand = vscode.commands.registerCommand("unit.test.explorer.groupBy",
             () => this.onCommandGroupBy());
         context.subscriptions.push(groupByExplorerCommand);
-
-        //register the run selected test command
-        const runTestCommand = vscode.commands.registerCommand("unit.test.execution.runSelected",
-            (item) => { item ? this.runTest(item) : null });
-        context.subscriptions.push(runTestCommand);
-
-        //register the run selected test command
-        const debugTestCommand = vscode.commands.registerCommand("unit.test.execution.debugSelected",
-            (item) => { item ? this.runTest(item, true) : null });
-        context.subscriptions.push(debugTestCommand);
-
-        //register the show test case result command
-        const showTestResultCommand = vscode.commands.registerCommand("unit.test.explorer.openTestResult",
-            event => this.onCommandOpenTestCaseResult(event));
-        context.subscriptions.push(showTestResultCommand);
-
-        //register the run all test cases command
-        const runAllTestCommand = vscode.commands.registerCommand("unit.test.execution.runAll",
-            () => this.onCommandRunAllTests(false));
-        context.subscriptions.push(runAllTestCommand);
-
-        //register the debug all test cases command
-        const debugAllTestCommand = vscode.commands.registerCommand("unit.test.execution.debugAll",
-            () => this.onCommandRunAllTests(true));
-        context.subscriptions.push(debugAllTestCommand);
-
-        //register the stop test running command
-        const stopTestCommand = vscode.commands.registerCommand("unit.test.execution.stop",
-            () => this.onCommandStopTests());
-        context.subscriptions.push(stopTestCommand);
-        
-
-    }
-
-    private onCommandStopTests() {
-        this.testLanguageClient.stopRunningTests();
-    }
-
-    private onCommandRestartServer() {
-        this.testLanguageClient.stopServer();
-
-        this.initializeLanguageClient();
-    }
-
-    /**
-     * Open the output panel test case result and show the test case result
-     * @param item 
-     */
-    private onCommandOpenTestCaseResult(item: TestTreeType) {
-        if (item instanceof TestCase) {
-            this.testResultOutputChannel.clear();
-            this.testResultOutputChannel.show(true);
-            this.testResultOutputChannel.appendLine(item.title);
-            this.testResultOutputChannel.appendLine(`Source: ${item.path}:${item.line}:${item.column}`);
-
-            if (item.status != TestCaseStatus.None) {
-                this.testResultOutputChannel.appendLine(`Duration: ${item.duration}`);
-                this.testResultOutputChannel.appendLine(`Start Time: ${item.startTime}`);
-                this.testResultOutputChannel.appendLine(`End Time: ${item.endTime}`);
-
-                if (item.status === TestCaseStatus.Failed) {
-                    this.testResultOutputChannel.appendLine(`Error: ${item.errorMessage}`);
-                    this.testResultOutputChannel.appendLine(`Stack Trace: ${item.errorStackTrace}`);
-                }
-            }
-        }
     }
 
     /**

@@ -5,19 +5,19 @@ import * as debounce from "throttle-debounce/debounce";
 import * as Collections from "typescript-collections";
 import * as path from "path";
 
-import { TestCase, RunTestCasesResult, DiscoveryTestCasesResult, DataOutputParams, DebugInformationParams } from '../testLanguage/protocol';
-import Event, { Emitter } from "../base/common/Event";
-import { startServer } from "../utils/server";
+import { TestCase, RunTestCasesResult, DiscoveryTestCasesResult, DataOutputParams, DebugInformationParams } from './testLanguage/protocol';
+import Event, { Emitter } from "./base/common/Event";
+import { startServer } from "./utils/server";
 import { TestCaseCollection } from "./testCaseCollection"
-import { TestLanguageClient } from "../testLanguage/client/testLanguageClient"
+import { TestLanguageClient } from "./testLanguage/client/testLanguageClient"
 import { StreamMessageReader, StreamMessageWriter, SocketMessageReader } from 'vscode-jsonrpc';
-import { PathUtils } from "../utils/path"
-import { getwatchInterval } from "../utils/vsconfig"
+import { PathUtils } from "./utils/path"
+import { getwatchInterval } from "./utils/vsconfig"
 import {
     InitializeParams, InitializeResult,
     TestCaseUpdateParams, FileChangeType, FileChangeParams
-} from "../testLanguage/protocol"
-import { RunRequest } from "../mochaTestLanguageServer/testRunner/protocol";
+} from "./testLanguage/protocol"
+import { RunRequest } from "./mochaTestLanguageServer/testRunner/protocol";
 
 /**
  * Create the test result output channel
@@ -27,7 +27,7 @@ const testOutputChannel = vscode.window.createOutputChannel('Test');
 /**   
  * Class responsible for handling the test communication events 
  */
-export class TestTreeLanguageClient extends TestLanguageClient {
+export class TestClient extends TestLanguageClient {
     public testCaseCollection: TestCaseCollection = new TestCaseCollection();
 
     /**
@@ -38,27 +38,27 @@ export class TestTreeLanguageClient extends TestLanguageClient {
     /**
      * The current directory where the extension is running
      */
-    private directory: string = null;
+    protected directory: string = null;
 
     /**
      * The current provider settings
      */
-    private providerSettings: any = null;
+    protected providerSettings: any = null;
 
     /**
      * The test server process
      */
-    private serverProcess: cp.ChildProcess;
+    protected serverProcess: cp.ChildProcess;
 
     /**
      * Create the test result output channel
      */
-    private testOutputChannel = testOutputChannel;
+    protected testOutputChannel = testOutputChannel;
 
     /**
      * vent notification emitted when test case change (new test, update)
      */
-    private _onDidTestCaseChanged: Emitter<TestCase>;
+    protected _onDidTestCaseChanged: Emitter<TestCase>;
 
     constructor(directory: string, providerSettings: any) {
         super();
