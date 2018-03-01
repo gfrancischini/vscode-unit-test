@@ -23,7 +23,12 @@ export function activate(context: vscode.ExtensionContext) {
             context.subscriptions.push(vscode.languages.registerCodeLensProvider(JS_MODE, testCodeLensProvider));
            
             testProvider.discoveryTests();
-        });
+        }).catch((reason) => {
+            vscode.window.showErrorMessage(`Error initializing: ${reason}`);
+            if(reason instanceof Error) {
+                console.log(`Error initializing: ${reason.message} : ${reason.stack}`);
+            }
+        })
     }  
 }
 

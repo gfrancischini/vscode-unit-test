@@ -26,7 +26,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
     constructor(private context: vscode.ExtensionContext, private testProvider: TestProvider) {
         this.registerServerCommands(context);
 
-        this.testProvider.client.onDidTestCaseChanged((testCase : TestCase) => {
+        this.testProvider.onDidTestCaseChanged((testCase : TestCase) => {
             this.refrehTestExplorer(null);
         })
     }
@@ -168,7 +168,7 @@ export class TestTreeDataProvider implements vscode.TreeDataProvider<TestTreeTyp
      * Method used to register test service listener like onDitTestCaseChanged 
      */
     private registerTestServiceListeners() {
-        this.testProvider.client.onDidTestCaseChanged((test: TestCase) => {
+        this.testProvider.onDidTestCaseChanged((test: TestCase) => {
             this._onDidChangeTreeData.fire(test);
         });
     }

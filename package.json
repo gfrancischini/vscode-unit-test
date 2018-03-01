@@ -125,17 +125,17 @@
                 },
                 "unit.test.watchInterval": {
                     "type": "number",
-                    "default": "3000",
+                    "default": 3000,
                     "description": "Define the minimum amount of time required before dispatch a file change message"
                 },
                 "unit.test.enableCodeLens": {
                     "type": "boolean",
-                    "default": "true",
+                    "default": true,
                     "description": "Enable the code lens provider for run|debug tests"
                 },
                 "unit.test.enable": {
                     "type": "boolean",
-                    "default": "true",
+                    "default": true,
                     "description": "Enable the unit test plugin"
                 }
             }

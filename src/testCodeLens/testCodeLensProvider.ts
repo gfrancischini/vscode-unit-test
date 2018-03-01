@@ -10,7 +10,7 @@ export class TestCodeLensProvider extends BaseCodeLensProvider {
         super();
         //
 
-        this.testProvider.client.onDidTestCaseChanged((testCase) => {
+        this.testProvider.onDidTestCaseChanged((testCase) => {
             //we need to improve this
             this.onDidChangeCodeLensesEmitter.fire();
         });

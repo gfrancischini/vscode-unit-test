@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+
+
 import { TestCase, TestCaseStatus, InitializeResult } from "./testLanguage/protocol"
 import { TestTreeType } from "./testTreeProvider/treeType"
 import { TestClient } from "./testClient"
@@ -25,11 +27,19 @@ export class TestProvider {
     private directory: string;
     public client: TestClient;
 
+    /**
+     * vent notification emitted when test case change (new test, update)
+     */
+    protected _onDidTestCaseChanged: vscode.EventEmitter<TestCase>;
+
     constructor(private context: vscode.ExtensionContext) {
         //todo: bug here when there is more than one workspace folders
         //super
         //this.rootDir = vscode.workspace.workspaceFolders[0].uri.fsPath;
 
+        this._onDidTestCaseChanged = new vscode.EventEmitter<TestCase>();
+
+        this.registerBasicCommands(context);
 
         this.registerServerCommands(context);
 
@@ -38,9 +48,16 @@ export class TestProvider {
                 //restart server due to configuration changes
                 this.onCommandRestartServer();
             }
-        })
-
+        });
     }
+
+    /**
+     * Register a new listeener for the test changed
+     */
+    public get onDidTestCaseChanged(): vscode.Event<TestCase> {
+        return this._onDidTestCaseChanged.event;
+    }
+
 
     public initialize() {
         return new Promise((resolve, reject) => {
@@ -48,9 +65,14 @@ export class TestProvider {
             this.client = new TestClient(this.directory, readSettings(vscode.workspace.workspaceFolders[0].uri));
 
             this.client.initialize().then((result: InitializeResult) => {
+                this.status = TestLanguageStatus.Initializing;
                 console.log("initalizeResult: " + JSON.stringify(result));
-            
+
                 resolve(result)
+            });
+
+            this.client.testCaseCollection.onDidTestCaseCollectionChanged(() => {
+                this._onDidTestCaseChanged.fire();
             });
         });
     }
@@ -91,10 +113,12 @@ export class TestProvider {
      * Called when discovery test is needed
      */
     public discoveryTests() {
-        this.status = TestLanguageStatus.FindingTests;
-        this.client.discoveryWorkspaceTests(this.directory).then((testCases) => {
-            this.status = TestLanguageStatus.Ready;
-            //this._onDidChangeTreeData.fire();
+        vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: "Test Adapter" }, progress => {
+            this.status = TestLanguageStatus.FindingTests;
+            return this.client.discoveryWorkspaceTests(this.directory).then((testCases) => {
+                this.status = TestLanguageStatus.Ready;
+                this._onDidTestCaseChanged.fire();
+            });
         });
     }
 
@@ -103,14 +127,25 @@ export class TestProvider {
      * @param item 
      */
     private runTest(item: TestTreeType, debug: boolean = false) {
-        if (item instanceof TreeLabel) {
-            this.client.runTests(item.children, debug);
-        }
-        else {
-            const testCases = this.client.testCaseCollection.findAllChildrens(item.id);
-            testCases.push(item);
-            this.client.runTests(testCases, debug);
-        }
+        vscode.window.withProgress(
+            { location: vscode.ProgressLocation.Window, title: "Test Adapter" },
+            progress => {
+                progress.report({ message: `Running Tests` });
+
+                let toRunTestCases = null;
+                if (item instanceof TreeLabel) {
+                    toRunTestCases = item.children;
+                }
+                else {
+                    toRunTestCases = this.client.testCaseCollection.findAllChildrens(item.id);
+                    toRunTestCases.push(item);
+
+                }
+
+                return this.client.runTests(toRunTestCases, debug).then(() => {
+                    this._onDidTestCaseChanged.fire();
+                });
+            });
     }
 
     private registerBasicCommands(context: vscode.ExtensionContext) {
@@ -173,7 +208,12 @@ export class TestProvider {
     }
 
     private onCommandRestartServer() {
+        this.status = TestLanguageStatus.None;
         this.client.stopServer();
+
+        this.initialize().then(() => {
+            this.discoveryTests();
+        })
     }
 
     /**

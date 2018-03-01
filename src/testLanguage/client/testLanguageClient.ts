@@ -21,6 +21,8 @@ export interface IConnection {
     onDataOutput(handler: any): void;
     onDebugInformation(handler: any): void;
     cancelRequest(params: CancelParams) : void;
+    onClose(handler: any): void;
+    onError(handler:any) : void;
 }
 
 
@@ -43,6 +45,8 @@ export class TestLanguageClient {
             onDataOutput: (handler) => msgConnection.onNotification(DataOutputNotification.type, handler),
             onDebugInformation: (handler) => msgConnection.onNotification(DebugInformationNotification.type, handler),
             cancelRequest: (params: CancelParams) => msgConnection.sendNotification(CancelNotification.type, params),
+            onClose: (handler)  => msgConnection.onClose(handler),
+            onError: (handler)  => msgConnection.onError(handler),
         }
 
         return result;

@@ -54,24 +54,18 @@ export class TestClient extends TestLanguageClient {
      */
     protected testOutputChannel = testOutputChannel;
 
-    /**
-     * vent notification emitted when test case change (new test, update)
-     */
-    protected _onDidTestCaseChanged: vscode.EventEmitter<TestCase>;
+
+    protected fileChanges = new Array<FileChangeParams>();
+
+    
 
     constructor(directory: string, providerSettings: any) {
         super();
         this.directory = directory;
         this.providerSettings = providerSettings;
-        this._onDidTestCaseChanged = new vscode.EventEmitter<TestCase>();
+
     }
 
-    /**
-    * Register a new listeener for the test changed
-    */
-    public get onDidTestCaseChanged(): vscode.Event<TestCase> {
-        return this._onDidTestCaseChanged.event;
-    }
 
     /** 
      * Initalize the client and start the test server
@@ -98,6 +92,7 @@ export class TestClient extends TestLanguageClient {
                 }
                 resolve(result);
             });
+            
         });
 
     }
@@ -108,19 +103,11 @@ export class TestClient extends TestLanguageClient {
     registerListeners() {
         super.registerListeners();
 
-        const throttled = throttle(300, () => {
-            // Throttled function 
-            this._onDidTestCaseChanged.fire();
-        });
-
+      
 
         this.connection.onTestCaseUpdated((params: TestCaseUpdateParams): any => {
             let testCase: TestCase = Object.assign(new TestCase(), params.testCase);
-
             this.testCaseCollection.push(testCase);
-
-            throttled();
-
         });
 
         this.connection.onDataOutput((params: DataOutputParams): any => {
@@ -138,9 +125,18 @@ export class TestClient extends TestLanguageClient {
                 this.debuggerStatus = DebuggerStatus.Disconnected;
             });*/
         });
+
+        this.connection.onClose(() => {
+            console.log("The server connection got closed");
+        });
+
+
+        this.connection.onError(() => {
+            console.log("The server connection got an error");
+        })
     }
 
-    protected fileChanges = new Array<FileChangeParams>();
+    
 
     public fileChangesDebounced = debounce(getwatchInterval(), () => {
         this.discoveryWorkspaceTests(null, this.fileChanges);
@@ -182,27 +178,22 @@ export class TestClient extends TestLanguageClient {
     */
     public discoveryWorkspaceTests(directory: string, fileChanges?: Array<FileChangeParams>): Promise<Array<TestCase>> {
         this.testOutputChannel.appendLine("Start test discovery");
-
-        return <Promise<Array<TestCase>>>vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: "Test Adapter" }, progress => {
-            this.testOutputChannel.appendLine(`Discovering Tests`);
-            return new Promise((resolve, reject) => {
-                return this.connection.discoveryTestCases({
-                    directory: directory,
-                    fileChanges: fileChanges
-                }).then((result: DiscoveryTestCasesResult) => {
-                    this.testCaseCollection.testCasesDictionary.clear();
-                    result.testCases.forEach((testCase) => {
-                        let convertedTestCase: TestCase = Object.assign(new TestCase(), testCase);
-                        this.testCaseCollection.push(convertedTestCase);
-                    });
-                    this._onDidTestCaseChanged.fire();
-
-                    this.testOutputChannel.appendLine(`Discovered ${result.testCases.length} tests`);
-
-                    //todo: we need to findtest cases and them do the diff between new tests and excluded ones
-                    this.testOutputChannel.appendLine("End of test discovery");
-                    return resolve(result.testCases);
+        return new Promise((resolve, reject) => {
+            return this.connection.discoveryTestCases({
+                directory: directory,
+                fileChanges: fileChanges
+            }).then((result: DiscoveryTestCasesResult) => {
+                this.testCaseCollection.testCasesDictionary.clear();
+                result.testCases.forEach((testCase) => {
+                    let convertedTestCase: TestCase = Object.assign(new TestCase(), testCase);
+                    this.testCaseCollection.push(convertedTestCase);
                 });
+
+                this.testOutputChannel.appendLine(`Discovered ${result.testCases.length} tests`);
+
+                //todo: we need to findtest cases and them do the diff between new tests and excluded ones
+                this.testOutputChannel.appendLine("End of test discovery");
+                return resolve(result.testCases);
             });
         });
     }
@@ -223,27 +214,17 @@ export class TestClient extends TestLanguageClient {
         }
 
         this.testOutputChannel.show();
-        vscode.window.withProgress(
-            { location: vscode.ProgressLocation.Window, title: "Test Adapter" },
-            progress => {
-                progress.report({ message: `Running Tests` });
-                return new Promise((resolve, reject) => {
-                    this.connection.runTestCases({
-                        sessionId: this.sessionId,
-                        testCases,
-                        debug: debuggingEnabled
-                    }).then((result: RunTestCasesResult) => {
-                        this._onDidTestCaseChanged.fire();
 
-                        if (debuggingEnabled) {
-                            vscode.commands.executeCommand("workbench.action.debug.stop");
-                        }
-
-                        this.testOutputChannel.appendLine("End of test running");
-                        return resolve(null);
-                    });
-                });
+        return new Promise((resolve, reject) => {
+            this.connection.runTestCases({
+                sessionId: this.sessionId,
+                testCases,
+                debug: debuggingEnabled
+            }).then((result: RunTestCasesResult) => {
+                this.testOutputChannel.appendLine("End of test running");
+                return resolve(null);
             });
+        });
     }
 
     /** 
