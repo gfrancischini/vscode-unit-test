@@ -81,6 +81,7 @@ Calling out known issues can help limit users opening duplicate issues against y
 ## Release Notes
 
 ### 0.3.0
+Add CodeLens (run, debug)
 Add command Stop Running Tests
 Fix test status bug when debugger is stopped but the test was still running
 Refresh test explorer/Restart test explorer now clears the current list of tests

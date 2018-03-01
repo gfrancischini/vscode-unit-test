@@ -6,7 +6,6 @@ import * as Collections from "typescript-collections";
 import * as path from "path";
 
 import { TestCase, RunTestCasesResult, DiscoveryTestCasesResult, DataOutputParams, DebugInformationParams } from './testLanguage/protocol';
-import Event, { Emitter } from "./base/common/Event";
 import { startServer } from "./utils/server";
 import { TestCaseCollection } from "./testCaseCollection"
 import { TestLanguageClient } from "./testLanguage/client/testLanguageClient"
@@ -58,19 +57,19 @@ export class TestClient extends TestLanguageClient {
     /**
      * vent notification emitted when test case change (new test, update)
      */
-    protected _onDidTestCaseChanged: Emitter<TestCase>;
+    protected _onDidTestCaseChanged: vscode.EventEmitter<TestCase>;
 
     constructor(directory: string, providerSettings: any) {
         super();
         this.directory = directory;
         this.providerSettings = providerSettings;
-        this._onDidTestCaseChanged = new Emitter<TestCase>();
+        this._onDidTestCaseChanged = new vscode.EventEmitter<TestCase>();
     }
 
     /**
     * Register a new listeener for the test changed
     */
-    public get onDidTestCaseChanged(): Event<TestCase> {
+    public get onDidTestCaseChanged(): vscode.Event<TestCase> {
         return this._onDidTestCaseChanged.event;
     }
 
