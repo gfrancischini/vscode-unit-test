@@ -221,6 +221,9 @@ export class TestClient extends TestLanguageClient {
                 testCases,
                 debug: debuggingEnabled
             }).then((result: RunTestCasesResult) => {
+                if (debuggingEnabled) {
+                    vscode.commands.executeCommand("workbench.action.debug.stop");
+                }
                 this.testOutputChannel.appendLine("End of test running");
                 return resolve(null);
             });

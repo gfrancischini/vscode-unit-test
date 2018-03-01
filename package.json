@@ -2,7 +2,7 @@
     "name": "vscode-unit-test",
     "displayName": "Unit Test Explorer",
     "description": "Unit Test IDE for vscode",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "publisher": "gfrancischini",
     "icon": "resources/icon/testingicon.png",
     "repository": {

@@ -90,6 +90,9 @@ Mocha.opts is supported but currently only --ui, --timeout and --require are res
 
 ## Release Notes
 
+### 0.3.1
+Fix end of debug test failure
+
 ### 0.3.0
 Add CodeLens (run, debug)
 Add command Stop Running Tests
