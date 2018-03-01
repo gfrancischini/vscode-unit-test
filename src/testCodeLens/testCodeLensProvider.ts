@@ -2,16 +2,23 @@ import * as vscode from "vscode";
 import { BaseCodeLensProvider } from "./baseCodelensProvider"
 import { TestProvider } from "../testProvider"
 import { PathUtils } from "../utils/path";
-
+import { isCodeLensEnabled } from "../utils/vsconfig"
 
 export class TestCodeLensProvider extends BaseCodeLensProvider {
 
     constructor(private context: vscode.ExtensionContext, private testProvider: TestProvider) {
         super();
-        //this.setEnabled(true);
-        
+        //
+
         this.testProvider.client.onDidTestCaseChanged((testCase) => {
+            //we need to improve this
             this.onDidChangeCodeLensesEmitter.fire();
+        });
+
+        vscode.workspace.onDidChangeConfiguration((event) => {
+            if (event.affectsConfiguration("unit.test.enableCodeLens")) {
+                this.setEnabled(isCodeLensEnabled());
+            }
         })
 
     }
@@ -20,14 +27,14 @@ export class TestCodeLensProvider extends BaseCodeLensProvider {
         if (!this.enabled) {
             return [];
         }
-  
+
         return this.getCodeLensForTests(document);
     }
 
     private getCodeLensForTests(document: vscode.TextDocument): Thenable<vscode.CodeLens[]> {
         return new Promise((resolve, reject) => {
             let codelens = [];
-            
+
             const testCases = this.testProvider.client.testCaseCollection.testCasesDictionary.values();
             const filteredTestCases = testCases.filter((testCase) => {
                 return testCase.path === PathUtils.normalizePath(document.uri.fsPath);

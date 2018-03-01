@@ -1,10 +1,9 @@
 import * as vscode from "vscode";
 
 export function isExtensionEnabled(): boolean {
-    const configuration  = vscode.workspace.getConfiguration(`vstest`);
+    const configuration  = vscode.workspace.getConfiguration(`unit.test`);
     const value = configuration.get("enable");
-    //return value == true || !value;
-    return true;
+    return value == true || !value;
 }
 
 export function isAutoInitializeEnabled(): boolean {
@@ -30,6 +29,14 @@ export function getCurrentTestProviderName(scope : vscode.Uri) {
     const value = configuration.get("provider");
     return <string>value;
 }
+
+
+export function isCodeLensEnabled(): boolean {
+    const configuration  = vscode.workspace.getConfiguration(`unit.test`);
+    const value = configuration.get("enableCodeLens");
+    return value == true;
+}
+
 
 export function readSettings(scope: vscode.Uri) {
     const currentProviderName = getCurrentTestProviderName(scope);

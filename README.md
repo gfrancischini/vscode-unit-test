@@ -65,18 +65,28 @@ This extension contributes the following settings:
     "glob": "test/**/*.js",
     "opts": "/Test/mocha.opts",
     "mochaPath": "node_module/mocha"
-}
+},
 
-"unit.test.watchInterval" : 3000
+"unit.test.watchInterval" : 3000,
+"unit.test.enableCodeLens" : true,
+"unit.test.enable" : true,
 ```
 
-* `glob`: Optional Mocha Glob pattern used to find test files. By default the extension will use the glob pattern "test/**/*.js"
-* `opts`: Optional Mocha Opts Path Relative path to the workspace. By default the extension will search for mocha.opts under you test directory
-* `mochaPath` : Optional Mocha relative or full path to the installed mocha module. By default the extension will search the node_modules of you project
-* `watchInterval` : Define the minimum amount of time required before dispatch a file change message and discover the tests
+### Plugin Configurations
+
+* `unit.test.watchInterval` : Define the minimum amount of time required before dispatch a file change message and discover the tests
+* `unit.test.enableCodeLens` : Enable the code lens provider for run|debug tests
+* `unit.test.enable` : Enable the unit test plugin
+
+### Mocha Related Configurations
+* `unit.test.mocha.glob`: Optional Mocha Glob pattern used to find test files. By default the extension will use the glob pattern "test/**/*.js"
+* `unit.test.mocha.opts`: Optional Mocha Opts Path Relative path to the workspace. By default the extension will search for mocha.opts under you test directory
+* `unit.test.mocha.mochaPath` : Optional Mocha relative or full path to the installed mocha module. By default the extension will search the node_modules of you project
+
+
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+Mocha.opts is supported but currently only --ui, --timeout and --require are respected
 
 ## Release Notes
 
